@@ -1,0 +1,8 @@
+sys-apps/dbus X
+x11-libs/evas X
+x11-libs/ecore X
+x11-wm/e X
+dev-libs/efreet hiddenvisibility
+sys-mobilephone/freesmartphone-framework gsm
+net-wireless/wpa_supplicant gnutls
+x11-base/xorg-server tslib

@@ -1,0 +1,18 @@
+--- src/jtag/core.c.orig	2009-08-30 18:01:20.000000000 +0200
++++ src/jtag/core.c	2009-08-30 18:03:01.000000000 +0200
+@@ -473,6 +473,15 @@
+ {
+ 	jtag_prelude(TAP_RESET);
+ 	jtag_set_error(interface_jtag_add_tlr());
++	
++	/*
++	 * Add a bunch of clocks after TLR entry to force SWD reset (newer
++	 * ARM cores; just in case, ~50 cycles), switch on ICEpick power
++	 * domains (for some TI parts, ~100 cycles), etc.  TAP_RESET is a
++	 * stable state, so this must be harmless to all JTAG controllers.
++	 */
++	jtag_set_error(interface_jtag_add_runtest(100, TAP_RESET));
++	
+ 	jtag_call_event_callbacks(JTAG_TRST_ASSERTED);
+ }
+ 

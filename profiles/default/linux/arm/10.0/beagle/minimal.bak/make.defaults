@@ -1,0 +1,27 @@
+# Make.defaults based on Gentoo's
+
+ARCH="arm"
+ACCEPT_KEYWORDS="arm"
+
+CHOST="armv4tl-softfloat-linux-gnueabi"
+CFLAGS="-Os -pipe"
+CXXFLAGS="${CFLAGS}"
+
+USE="${USE} midi cracklib minimal multicall zlib python nls unicode ncurses readline iconv ssl sqlite -perl"
+FEATURES="strict sfperms"
+
+USE_EXPAND="VIDEO_CARDS INPUT_DEVICES LINGUAS USERLAND KERNEL ELIBC ALSA_CARDS ALSA_PCM_PLUGINS LCD_DEVICES"
+USE_EXPAND_HIDDEN="USERLAND KERNEL ELIBC CROSSCOMPILE_OPTS"
+
+CONFIG_PROTECT="/etc"
+CONFIG_PROTECT_MASK="/etc/env.d /etc/gconf"
+
+PROFILE_ONLY_VARIABLES="ARCH ELIBC KERNEL USERLAND"
+ELIBC="glibc"
+KERNEL="linux"
+USERLAND="GNU"
+INPUT_DEVICES="tslib evdev"
+ALSA_PCM_PLUGINS="adpcm alaw asym copy dmix dshare dsnoop empty extplug file hooks iec958 ioplug ladspa lfloat linear meter mmap_emul mulaw multi null plug rate route share shm softvol"
+LCD_DEVICES="bayrad cfontz cfontz633 glk hd44780 lb216 lcdm001 mtxorb ncurses text"
+VIDEO_CARDS="glamo"
+

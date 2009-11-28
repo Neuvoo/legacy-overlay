@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<herd>no-herd</herd>
+	<maintainer>
+		<email>fun2program8@yahoo.com</email>
+		<name>Jacob Godserv</name>
+	</maintainer>
+	<longdescription lang="en">
+		A simple startup script that make sure some fairly 
+		critical things are set up. If something is amiss, it 
+		will guide the user to a resolution (if they want one 
+		;).
+	</longdescription>
+</pkgmetadata>

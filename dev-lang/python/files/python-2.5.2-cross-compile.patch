@@ -1,0 +1,11 @@
+--- Makefile.pre.in	2008-09-28 13:21:04.000000000 +0200
++++ Makefile.pre.in.new	2008-09-28 13:20:54.000000000 +0200
+@@ -87,7 +87,7 @@
+ 
+ # Expanded directories
+ BINDIR=		$(exec_prefix)/bin
+-LIBDIR=		$(exec_prefix)/lib
++LIBDIR=		@libdir@
+ MANDIR=		@mandir@
+ INCLUDEDIR=	@includedir@
+ CONFINCLUDEDIR=	$(exec_prefix)/include

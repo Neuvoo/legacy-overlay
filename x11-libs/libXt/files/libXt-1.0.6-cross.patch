@@ -1,0 +1,66 @@
+--- configure.ac.bak	2009-08-31 23:56:58.000000000 +0200
++++ configure.ac	2009-08-31 23:57:29.000000000 +0200
+@@ -48,6 +48,12 @@
+ 	fi
+ fi
+ AC_SUBST([CC_FOR_BUILD])
++CFLAGS_FOR_BUILD=${CFLAGS_FOR_BUILD-${CFLAGS}}
++AC_SUBST(CFLAGS_FOR_BUILD)
++LDFLAGS_FOR_BUILD=${LDFLAGS_FOR_BUILD-${LDFLAGS}}
++AC_SUBST(LDFLAGS_FOR_BUILD)
++
++AM_CONDITIONAL(CROSS_COMPILING, [ test $cross_compiling = yes ])
+ 
+ PKG_CHECK_MODULES(XT, sm x11 xproto kbproto)
+ 
+--- util/Makefile.am.bak	2009-08-31 23:56:07.000000000 +0200
++++ util/Makefile.am	2009-08-31 23:56:12.000000000 +0200
+@@ -1,11 +1,11 @@
+ if INSTALL_MAKESTRS
+ bin_PROGRAMS = makestrs
++noinst_PROGRAMS = $(MAKESTRS_PROG)
+ else
+ noinst_PROGRAMS = makestrs
++noinst_PROGRAMS += $(MAKESTRS_PROG)
+ endif
+ 
+-CC = @CC_FOR_BUILD@
+-
+ EXTRA_DIST = \
+ 	Shell.ht \
+ 	StrDefs.ct \
+@@ -43,3 +43,12 @@
+ 
+ .man.$(APP_MAN_SUFFIX):
+ 	sed $(MAN_SUBSTS) < $< > $@
++
++if CROSS_COMPILING
++MAKESTRS_PROG=xmakestrs$(EXEEXT)
++
++xmakestrs$(EXEEXT): makestrs.c
++	$(CC_FOR_BUILD) $(X11_CFLAGS) $(CPPFLAGS_FOR_BUILD) \
++	$(CFLAGS_FOR_BUILD) $(LDFLAGS_FOR_BUILD) -o $@ makestrs.c
++endif
++
+--- src/Makefile.am.bak	2009-08-31 23:57:58.000000000 +0200
++++ src/Makefile.am	2009-08-31 23:58:28.000000000 +0200
+@@ -92,12 +92,18 @@
+ 
+ STRING_LIST = $(top_srcdir)/util/string.list
+ 
++if CROSS_COMPILING
++MAKESTRS=$(top_builddir)/util/xmakestrs
++else
++MAKESTRS=$(top_builddir)/util/makestrs
++endif
++
+ all-local: $(BUILT_FILES)
+ 
+ $(BUILT_HEADER): $(BUILT_SOURCE)
+ 
+ $(BUILT_SOURCE):
+-	$(top_builddir)/util/makestrs -i $(top_srcdir) $(STRINGSABIOPTIONS) < $(STRING_LIST) > StringDefs.c
++	$(MAKESTRS) -i $(top_srcdir) $(STRINGSABIOPTIONS) < $(STRING_LIST) > StringDefs.c
+ 	mkdir -p $(top_builddir)/src
+ 	mkdir -p $(top_builddir)/include/X11
+ 	cp StringDefs.h $(top_builddir)/include/X11

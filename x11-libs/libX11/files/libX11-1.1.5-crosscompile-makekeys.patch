@@ -1,0 +1,64 @@
+--- configure.ac	2009-03-26 21:33:12.000000000 +0000
++++ configure.ac.new	2009-03-26 21:33:06.000000000 +0000
+@@ -305,6 +305,19 @@
+ fi
+ AC_SUBST(XKBPROTO_REQUIRES)
+ 
++AM_CONDITIONAL(CROSS_COMPILING, [ test $cross_compiling = yes ])
++
++AC_MSG_CHECKING([for CC_FOR_BUILD])
++if test "x${CC_FOR_BUILD+set}" != "xset" ; then
++  if test "x$cross_compiling" = "xyes" ; then
++    CC_FOR_BUILD=${CC_FOR_BUILD-gcc}
++  else
++    CC_FOR_BUILD=${CC}
++  fi
++fi
++AC_MSG_RESULT([$CC_FOR_BUILD])
++AC_SUBST(CC_FOR_BUILD)
++
+ AC_FUNC_MMAP()
+ composecache_default=$ac_cv_func_mmap_fixed_mapped
+ AC_CHECK_FUNC(nl_langinfo, , [composecache_default=no])
+
+--- src/Makefile.am	2009-03-26 21:33:18.000000000 +0000
++++ src/Makefile.am.new	2009-03-26 21:32:56.000000000 +0000
+@@ -421,8 +421,14 @@
+ 
+ KEYSYMDEF=@KEYSYMDEF@
+ 
++if CROSS_COMPILING
++MAKEKEYS=$(top_builddir)/src/util/xmakekeys
++else
++MAKEKEYS=$(top_builddir)/src/util/makekeys
++endif
++
+ ks_tables.h: $(KEYSYMDEF) $(top_builddir)/src/util/makekeys$(EXEEXT)
+-	$(top_builddir)/src/util/makekeys < $(KEYSYMDEF) > ks_tables_h
++	$(MAKEKEYS) < $(KEYSYMDEF) > ks_tables_h
+ 	mv ks_tables_h $@
+ 
+ $(top_builddir)/src/util/makekeys$(EXEEXT): force
+
+--- src/util/Makefile.am	2009-03-26 21:33:26.000000000 +0000
++++ src/util/Makefile.am.new	2009-03-26 21:32:47.000000000 +0000
+@@ -1,11 +1,16 @@
+ # $XdotOrg: lib/X11/src/util/Makefile.am,v 1.4 2006-02-19 02:14:12 jamey Exp $
+ 
+-noinst_PROGRAMS=makekeys
++noinst_PROGRAMS=makekeys$(EXEEXT) $(MAKEKEYS_PROG)
+ 
+ makekeys_CFLAGS=$(X11_CFLAGS)
+ 
+-#override CC = gcc
+-LINK = $(CC) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
++if CROSS_COMPILING
++MAKEKEYS_PROG=xmakekeys$(EXEEXT)
++
++xmakekeys$(EXEEXT): makekeys.c
++	$(CC_FOR_BUILD) $(X11_CFLAGS) $(CPPFLAGS_FOR_BUILD) \
++	$(CFLAGS_FOR_BUILD) $(LDFLAGS_FOR_BUILD) -o $@ makekeys.c
++endif
+ 
+ EXTRA_DIST = mkks.sh
+ 

@@ -1,0 +1,35 @@
+CHOST=armv7a-softfloat-linux-gnueabi
+ARCH=arm
+E_MACHINE=EM_ARM
+
+ACCEPT_KEYWORDS="arm ~arm"
+
+#USE="${ARCH} zlib bindist make-symlinks minimal -acl -python -nls -cracklib -fortran -mudflap -ipv6 -unicode sane"
+USE="${ARCH} -X alsa aotuv arm bindist compat dbus elibc_glibc fbcondecor fbdev gif gstreamer input_devices_evdev input_devices_keyboard input_devices_mouse jpeg justify kdrive kernel_linux minimal mng multicall nonfsv4 nptl pda png sdl threads threadsafe truetype userland_GNU video_cards_dummy video_cards_fbdev xorg xsettings zlib -ipv6 -acl -cracklib -python -gdbm -perl -python"
+
+MARCH_TUNE="-march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp"
+
+CFLAGS="-Os -pipe ${MARCH_TUNE} -fomit-frame-pointer -ftree-vectorize"
+CXXFLAGS="${CFLAGS}"
+
+FEATURES="-collision-protect parallel-fetch sandbox buildpkg noman noinfo nodoc sfperms"
+# Be sure we dont overwrite pkgs from another repo..
+
+ELIBC="glibc"
+KERNEL="linux"
+USERLAND="GNU"
+CLEAN_DELAY=0
+EPAUSE_IGNORE=1
+EBEEP_IGNORE=1
+PORTAGE_WORKDIR_MODE=2775
+PORTAGE_ECLASS_WARNING_ENABLE=0
+USE_EXPAND="ELIBC INPUT_DEVICES VIDEO_CARDS KERNEL USERLAND LINGUAS"
+
+UCLIBC_CPU_DEFAULT="GENERIC_ARM"
+
+### Hardware
+VIDEO_CARDS="fbdev dummy"
+ALSA_CARDS=""
+INPUT_DEVICES="evdev keyboard mouse touchscreen"
+USE_EXPAND="video_cards input_devices"
+

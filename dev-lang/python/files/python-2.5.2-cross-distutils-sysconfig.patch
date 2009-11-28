@@ -1,0 +1,51 @@
+This patch adds prepends the 'SYSROOT' path specified by the environment
+to the standard prefixes. By doing so we solve a whole bunch of problems
+with cross-compiling and installing  python extensions.
+
+The second part provides a fallback if the lib64 directory does not exist.
+This is an ugly hack for now, the right fix would be to determine if the
+target system is 32 or 64bit and adapt the libdir accordingly.
+
+--- Lib/distutils/sysconfig.py	2008-09-27 15:55:24.000000000 +0200
++++ Lib/distutils/sysconfig.py.new	2008-09-27 15:55:36.000000000 +0200
+@@ -19,9 +19,16 @@
+ from distutils.errors import DistutilsPlatformError
+ 
+ # These are needed in a couple of spots, so just compute them once.
++SYSROOT = os.getenv('SYSROOT')
+ PREFIX = os.path.normpath(sys.prefix)
+ EXEC_PREFIX = os.path.normpath(sys.exec_prefix)
+ 
++# Make sure we respect the user specified SYSROOT environment variable
++# This is the first step to get distutils to crosscompile stuff
++if SYSROOT is not None:
++    PREFIX = os.path.normpath(SYSROOT+os.path.sep+PREFIX)
++    EXEC_PREFIX = os.path.normpath(SYSROOT+os.path.sep+EXEC_PREFIX)
++
+ # python_build: (Boolean) if true, we're either building Python or
+ # building an extension with an un-installed Python, so we use
+ # different (hard-wired) directories.
+@@ -94,6 +101,10 @@
+ 
+     If 'prefix' is supplied, use it instead of sys.prefix or
+     sys.exec_prefix -- i.e., ignore 'plat_specific'.
++
++    For the posix system we can not always assume to have a lib64 directory
++    e.g. for cross-compile between 32 & 64 bit systems. So we test if the
++    'lib64' directory exists and use the normal 'lib' dir as fallback.
+     """
+     if prefix is None:
+         prefix = plat_specific and EXEC_PREFIX or PREFIX
+@@ -102,6 +113,12 @@
+         libpython = os.path.join(prefix,
+                                  "@@GENTOO_LIBDIR@@", 
+                                  "python" + get_python_version())
++
++        if not os.path.exists(libpython):
++            libpython = os.path.join(prefix,
++                                     "lib", 
++                                     "python" + get_python_version())
++        
+         if standard_lib:
+             return libpython
+         else:
