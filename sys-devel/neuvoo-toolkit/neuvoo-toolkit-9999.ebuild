@@ -25,7 +25,7 @@ src_compile() {
 src_install() {
         local dirs="bin build env"
         dodoc HOWTO || die "Failed to install documentation"
-        insinto "/opt/${P}"
+        insinto "/opt/${PN}"
         doins -r bin/ env/ || die "Failed to install data"
 }
 
