@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<layman>
+  <overlay type = "git" src = "git://gitorious.org/neuvoo/overlay.git" contact = "jacobgalbreath@gmail.com" name = "neuvoo">
+    <link>http://gitorious.org/neuvoo/overlay</link>
+    <description>Neuvoo Overlay</description>
+  </overlay>
+</layman>
