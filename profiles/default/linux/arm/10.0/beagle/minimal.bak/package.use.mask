@@ -1,3 +1,0 @@
-# Robert Piasek <robert@piasek.co.uk> (22 Feb 2009)
-# cairo engine isn't complete and it's abandoned (Raster)
-x11-libs/evas cairo
