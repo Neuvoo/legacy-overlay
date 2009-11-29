@@ -10,6 +10,11 @@ HOMEPAGE="http://neuvoo.org"
 DESCRIPTION="Neuvoo Toolkit."
 EGIT_REPO_URI="git://gitorious.org/neuvoo/toolkit.git"
 
+RDEPEND="app-arch/tar
+	app-arch/bzip2
+	app-shells/bash
+	sys-libs/ncurses"
+
 src_unpack() {
 	git_src_unpack
 }
@@ -25,6 +30,8 @@ src_compile() {
 src_install() {
         local dirs="bin build env"
         dodoc HOWTO || die "Failed to install documentation"
+	dodoc TODO
+	insopts -m700
         insinto "/opt/${PN}"
         doins -r bin/ env/ || die "Failed to install data"
 }
