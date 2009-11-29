@@ -1,10 +1,2 @@
-=dev-lang/python-3.1.1
-=dev-lang/python-3.1
-#sys-apps/portage
-#sys-apps/busybox
-#sys-apps/man-pages
-#sys-devel/libtool
-#sys-devel/automake
-#sys-devel/autoconf
-#sys-devel/gcc
-#dev-lang/perl
+>=dev-lang/python-3.1
+>=sys-libs/glibc-2.11

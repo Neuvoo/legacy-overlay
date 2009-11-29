@@ -1,3 +1,2 @@
-sys-apps/file -python
 sys-devel/gcc -fortran
-
+dev-lang/perl -gdbm

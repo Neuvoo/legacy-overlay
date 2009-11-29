@@ -1,6 +1,8 @@
 # Copyright 1999-2009 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/sys-apps/file/file-5.03.ebuild,v 1.1 2009/05/06 23:36:03 vapier Exp $
+# $Header: /var/cvsroot/gentoo-x86/sys-apps/file/file-5.03.ebuild,v 1.9 2009/10/05 18:19:20 armin76 Exp $
+
+DISTUTILS_DISABLE_PYTHON_DEPENDENCY="1"
 
 inherit eutils distutils libtool flag-o-matic
 
@@ -11,22 +13,20 @@ SRC_URI="ftp://ftp.astron.com/pub/file/${P}.tar.gz
 
 LICENSE="as-is"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~m68k ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~sparc-fbsd ~x86 ~x86-fbsd"
+KEYWORDS="alpha amd64 arm hppa ia64 m68k ~mips ppc ppc64 s390 sh sparc x86 ~sparc-fbsd ~x86-fbsd"
 IUSE="python"
+
+DEPEND="python? ( virtual/python )"
+RDEPEND="${DEPEND}"
 
 src_unpack() {
 	unpack ${P}.tar.gz
 	cd "${S}"
 
 	epatch "${FILESDIR}"/${PN}-4.15-libtool.patch #99593
-	epatch "${FILESDIR}"/${PN}-5.03-cross-python.patch 
-	epatch "${FILESDIR}"/${PN}-5.03-remove-pymagic.patch 
+        epatch "${FILESDIR}"/${PN}-5.03-cross-python.patch 
+        epatch "${FILESDIR}"/${PN}-5.03-remove-pymagic.patch 
 
-	aclocal
-	automake
-	#autotools.eclass
-	#eautoreconf
-	#eautomake
 	elibtoolize
 	epunt_cxx
 
@@ -42,6 +42,9 @@ src_unpack() {
 src_compile() {
 	# file uses things like strndup() and wcwidth()
 	append-flags -D_GNU_SOURCE
+  
+        aclocal
+        automake
 
 	econf || die
 	emake || die
