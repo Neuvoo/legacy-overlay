@@ -87,20 +87,17 @@ src_prepare() {
 
 	EPATCH_SUFFIX="patch" epatch "${WORKDIR}/${PV}"
 
-        # This fixes the compilation and makes ctypes avaible.
-        epatch "${FILESDIR}"/python-2.6-enable-ctypes-cross-build.patch
-        # Add a libdirname to enable python cross-compiling and add a user specifyable libdir
-        epatch "${FILESDIR}"/python-2.5.2-cross-Makefile.pre.in.patch
-        # Make distutils cross-compile aware
-        epatch "${FILESDIR}"/python-2.5.2-cross-distutils-build_ext.patch
-        epatch "${FILESDIR}"/python-2.6-cross-distutils-sysconfig.patch
-        epatch "${FILESDIR}"/python-2.5.2-cross-distutils-install.patch
-	# Remove old modules
-	epatch "${FILESDIR}"/python2.6-disable-old-modules.patch
-
-	if tc-is-cross-compiler; then
-                epatch "${FILESDIR}/python-2.6.4-cross-setup-sysroot.patch"
+	if tc-is-cross-compiler ; then
+		# Change setup.py to respect the SYSROOT environment variable
+		epatch "${FILESDIR}"/python-2.6.4-cross-setup-sysroot.patch
 	fi
+
+	# Add a libdirname to enable python cross-compiling and add a user specifyable libdir
+	epatch "${FILESDIR}"/python-2.5.2-cross-Makefile.pre.in.patch
+	# Make distutils cross-compile aware
+	epatch "${FILESDIR}"/python-2.5.2-cross-distutils-build_ext.patch
+	epatch "${FILESDIR}"/python-2.6-cross-distutils-sysconfig.patch
+	epatch "${FILESDIR}"/python-2.5.2-cross-distutils-install.patch
 
 	sed -i -e "s:@@GENTOO_LIBDIR@@:$(get_libdir):g" \
 		Lib/distutils/command/install.py \
@@ -177,6 +174,10 @@ src_configure() {
 		mv python hostpython
 		mv Parser/pgen Parser/hostpgen
 		make distclean
+		# Ugly fix, hostpython require few modules to pass test_unicode.py test
+		cp -v /usr/lib/python2.6/lib-dynload/unicodedata.so Modules/.
+		cp -v /usr/lib/python2.6/lib-dynload/time.so Modules/.
+		cp -v /usr/lib/python2.6/lib-dynload/math.so Modules/.
 		sed -i \
 			-e "/^HOSTPYTHON/s:=.*:=./hostpython:" \
 			-e "/^HOSTPGEN/s:=.*:=./Parser/hostpgen:" \
