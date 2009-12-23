@@ -5,8 +5,8 @@
 # Must be before x-modular eclass is inherited
 #SNAPSHOT="yes"
 
-EGIT_REPO_URI="git://anongit.freedesktop.org/git/${PN}"
 inherit x-modular toolchain-funcs versionator
+EGIT_REPO_URI="git://anongit.freedesktop.org/${PN}"
 
 DESCRIPTION="Low-level pixel manipulation routines"
 KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~x86-fbsd"
