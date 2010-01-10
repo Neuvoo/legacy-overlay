@@ -1,6 +1,0 @@
-USE="${ARCH} -X -acl bindist compat dbus elibc_glibc input_devices_evdev \
-     input_devices_keyboard kernel_linux minimal nptl threads threadsafe \
-     truetype userland_GNU video_cards_dummy video_cards_fbdev -xorg -xsettings \
-     zlib -ipv6 -acl -cracklib -gdbm -perl -python -nls -pam -zeroconf"
-
-INPUT_DEVICES="evdev keyboard"
