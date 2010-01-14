@@ -1,0 +1,23 @@
+acl
+ao
+apm
+cairo (viridis-undecided)
+caps (viridis-undecided)
+dbus (viridis->general)
+expat (viridis->general)
+fam (viridis->networking?,general?)
+firefox (viridis-undecided)
+gpm (viridis->general)
+java + java6 (viridis->general)
+javascript (viridis-undecided)
+nsplugin (viridis-undecided)
+samba (viridis->networking,works?)
+startup-notification (viridis->X)
+unicode (viridis->general)
+win32codecs (viridis->media,works?)
+xcb (viridis-undecided)
+xcomposite (viridis-undecided)
+xine (viridis-undecided)
+xscreensaver (viridis-undecided)
+xulrunner (viridis-undecided)
+

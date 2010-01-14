@@ -1,0 +1,1 @@
+USE="X directfb dri glut libnotify opengl sdl tk truetype xft"
