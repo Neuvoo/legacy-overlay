@@ -1,1 +1,2 @@
-USE="X directfb dri glut libnotify opengl sdl tk truetype xft"
+USE="X directfb dri glut libnotify opengl sdl tk xft"
+USE="${USE} truetype type1 cleartype corefonts"
