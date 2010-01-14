@@ -1,0 +1,8 @@
+Profiles here will not work completely just yet. Unfortunately, the 
+limitations of portage profiles require us to do a bit of a hack to make 
+it work.
+
+* Some profiles link to an official portage profile. Since we don't know 
+where that is, you're going to have to tell us. In the directory that 
+contains this overlay, run the following command:
+ln -s <profile directory, like /usr/portage/profiles> portage_profiles
