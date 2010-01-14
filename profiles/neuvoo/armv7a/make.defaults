@@ -1,4 +1,3 @@
-CHOST=armv7a-softfloat-linux-gnueabi
 ARCH=arm
 E_MACHINE=EM_ARM
 MARCH_TUNE="-march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp"
