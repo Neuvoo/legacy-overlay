@@ -1,0 +1,2 @@
+== Samba ==
+USE="samba", verify samba will compile and work on arm platform
