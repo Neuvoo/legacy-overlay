@@ -1,1 +1,0 @@
-USE="bzip2 fbcon gzip hal ncurses nptl pam posix readline threads usb xml zlib"
