@@ -7,25 +7,29 @@ K_NOUSENAME="yes"
 K_NOSETEXTRAVERSION="yes"
 K_NOUSEPR="yes"
 K_SECURITY_UNSUPPORTED="yes"
+K_WANT_GENPATCHES="base extras"
+K_GENPATCHES_VER="6"
 ETYPE="sources"
-inherit kernel-2 eutils git
+inherit kernel-2 eutils
 detect_version
 detect_arch
 
 KEYWORDS=""
 IUSE=""
 HOMEPAGE="http://neuvoo.org"
-DESCRIPTION="Neuvoo Development Kernel."
-EGIT_REPO_URI="git://gitorious.org/neuvoo/kernel.git"
-EGIT_BRANCH="master"
+DESCRIPTION="Neuvoo Generic Kernel."
 
-src_unpack() {
-	git_src_unpack
-}
+NVKV="${KV_MAJOR}.${KV_MINOR}.${KV_PATCH}"
+NVKRNL_URI="http://neuvoo.org/neuvoo/distfiles/${CATEGORY}/neuvoo-sources-${NVKV}.tar.bz2"
+SRC_URI="${NVKRNL_URI} ${ARCH_URI}"
+
+KEYWORDS="~arm"
 
 pkg_postinst() {
 	kernel-2_pkg_postinst
-	einfo "This ebuild for the neuvoo development kernel."
+	einfo "This ebuild for the generic neuvoo kernel."
+	eifno "The following devices should work with this kernel:"
+	einfo "  beagleboard, devkit800, overo, and armv7a devices"
 	einfo "Please report all bugs or comments to Neuvoo Devs at:"
 	einfo "IRC Freenode #neuvoo-dev or"
 	einfo "${HOMEPAGE}"
