@@ -1,1 +1,1 @@
-USE="avahi ftp ipv6 networkmanager rdesktop tcpd vnc zeroconf samba"
+USE="avahi ftp ipv6 networkmanager tcpd zeroconf samba"
