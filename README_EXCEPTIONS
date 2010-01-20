@@ -1,0 +1,3 @@
+# The following packages are exempt from requiring bugs upstream, since they are built by us:
+sys-kernel/neuvoo-sources-touchbook
+sys-kernel/neuvoo-sources
