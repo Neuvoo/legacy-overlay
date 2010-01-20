@@ -1,3 +1,2 @@
-USE="X cleartype corefonts dbus directfb dri firefox glut"
-USE="${USE} libnotify opengl sdl tk truetype type1"
-USE="${USE} xcomposite xft xulrunner"
+USE="X cleartype corefonts dbus directfb dri glut \
+     libnotify opengl sdl tk truetype type1 xcomposite"
