@@ -1,2 +1,5 @@
 net-wireless
+sys-apps
 sys-kernel
+x11-base
+x11-drivers
