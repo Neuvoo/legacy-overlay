@@ -1,0 +1,12 @@
+dev-libs/eina ~*
+dev-libs/eet ~*
+x11-libs/evas ~*
+x11-libs/ecore ~*
+dev-libs/embryo ~*
+media-libs/edje ~*
+dev-libs/efreet ~*
+x11-libs/e_dbus ~*
+x11-wm/enlightenment ~*
+app-misc/exchange ~*
+x11-misc/entrance ~*
+media-libs/epsilon ~*
