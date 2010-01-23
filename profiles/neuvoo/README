@@ -2,8 +2,8 @@ This file contains an explanation about how we structured our profiles.
 
 * features/<name>: this is a feature folder, which contains primarily 
 USE flags and sets, that instantly enable a certain feature. These are 
-intended to be optional and set at the user's discretion, so they
-should be referenced sparingly by a generic profile.
+intended to be optional, so they should never be referenced by a generic 
+profile.
 
 * <arch>/<device>/<additional purpose>: "arch" is self-explanatory, 
 "device" refers to a product such as beagleboard or touchboox, and 
@@ -11,5 +11,7 @@ should be referenced sparingly by a generic profile.
 minimal. Every folder here is expected to be a sibling of at least the 
 folder directly above.
 
-* images/<release>/<device>: "release" is the appropriate release
-version for your image.  "device" is as defined above previously.
+* images/<release>/<device>: "release" is the appropriate release 
+version for your image.  "device" is as defined above previously. This 
+profile folder is never to be linked to, but instead its contents are to 
+be used for the /etc/make.profile.neuvoo and /etc/portage folders.
