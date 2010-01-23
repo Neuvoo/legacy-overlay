@@ -1,1 +1,1 @@
-USE="acl caps cracklib crypt gnutls prelude"
+USE="caps gnutls prelude"
