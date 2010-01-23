@@ -1,3 +1,1 @@
-USE="bash-completion bzip2 cjk fbcon gzip hal ncurses \
-     nptl pam posix readline syslog threads unicode usb \
-     xml zlib"
+USE="bash-completion cjk fbcon gzip hal nptl posix syslog usb xml"
