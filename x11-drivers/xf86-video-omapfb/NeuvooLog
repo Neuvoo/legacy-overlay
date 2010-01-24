@@ -1,0 +1,8 @@
+[Description]
+short = new ebuild: xf86-video-omapfb
+long = xf86-video-omapfb is supposed to bring accelerated framebuffer support for ti
+	omap processors. current version needs <xextproto-7.1
+
+[GentooBug]
+bug = 302101
+
