@@ -3,7 +3,7 @@
 # $Header$
 
 # Must be before x-modular eclass is inherited
-#SNAPSHOT="yes"
+SNAPSHOT="yes"
 #PATCHES=""
 
 inherit x-modular
