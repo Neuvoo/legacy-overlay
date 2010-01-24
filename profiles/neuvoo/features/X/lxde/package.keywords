@@ -1,4 +1,4 @@
-# generated using: find /usr/portage/ -mindepth 2 -maxdepth 2 -type d -wholename '*/lxde-base/*' -printf '%P ~*\n' | sort
+# The following generated using: find /usr/portage/ -mindepth 2 -maxdepth 2 -type d -wholename '*/lxde-base/*' -printf '%P ~*\n' | sort
 lxde-base/lxappearance ~*
 lxde-base/lxde-common ~*
 lxde-base/lxde-icon-theme ~*
@@ -14,6 +14,8 @@ lxde-base/lxshortcut ~*
 lxde-base/lxtask ~*
 lxde-base/lxterminal ~*
 lxde-base/menu-cache ~*
+
+# The following added by hand
 x11-misc/obconf ~*
 x11-misc/pcmanfm ~*
 x11-wm/openbox ~*
