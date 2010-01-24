@@ -20,7 +20,9 @@ DESCRIPTION="X.Org driver for TI OMAP framebuffers"
 KEYWORDS="~arm"
 RDEPEND="x11-base/xorg-server"
 DEPEND="${RDEPEND}
-	x11-proto/renderproto"
+	x11-proto/renderproto
+	x11-proto/videoproto"
+
 S="${WORKDIR}/${P/_p*/}"
 IUSE="+neon"
 LICENSE="as-is"
