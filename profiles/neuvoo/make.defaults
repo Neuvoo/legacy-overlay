@@ -1,1 +1,2 @@
 USE="bash-completion cjk fbcon gzip hal nptl posix syslog usb xml"
+EMERGE_DEFAULT_OPTS="${EMERGE_DEFAULT_OPTS=} --binpkg-respect-use y"
