@@ -14,3 +14,7 @@ lxde-base/lxshortcut ~*
 lxde-base/lxtask ~*
 lxde-base/lxterminal ~*
 lxde-base/menu-cache ~*
+x11-misc/obconf ~*
+x11-misc/pcmanfm ~*
+x11-wm/openbox ~*
+media-gfx/gpicview ~*
