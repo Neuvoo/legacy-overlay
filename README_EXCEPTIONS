@@ -1,5 +1,4 @@
 # The following packages are exempt from requiring bugs upstream, since they are built by us:
-net-wireless/rt3070
 sys-kernel/neuvoo-sources
 sys-kernel/neuvoo-sources-touchbook
 
