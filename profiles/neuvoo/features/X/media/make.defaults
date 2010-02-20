@@ -1,3 +1,1 @@
-USE="a52 aac alsa dts esd exif ffmpeg flac gif gstreamer jpeg mad mp3 \
-     mp4 mpeg mplayer nsplugin ogg pdf png pulseaudio quicktime \
-     sndfile svg theora tiff vorbis x264 xpm xv xvid"
+USE="gstreamer nsplugin"

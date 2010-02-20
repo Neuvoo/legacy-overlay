@@ -1,0 +1,1 @@
+USE="aac alsa mad mp3 ogg pulseaudio sndfile vorbis"

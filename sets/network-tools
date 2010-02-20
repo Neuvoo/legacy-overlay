@@ -1,0 +1,12 @@
+dev-util/git
+dev-util/subversion
+mail-client/claws/mail
+net-ftp/filezilla
+net-im/pidgin
+net-irc/xchat
+net-misc/dhcpcd
+net-misc/netplug
+net-misc/networkmanager
+net-misc/openntpd
+net-wireless/bluez
+www-client/chromium

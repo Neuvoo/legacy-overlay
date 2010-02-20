@@ -1,0 +1,5 @@
+app-admin/logrotate
+app-admin/metalog
+app-misc/screen
+sys-apps/slocate
+sys-process/vixie-cron

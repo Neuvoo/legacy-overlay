@@ -1,2 +1,2 @@
 USE="X cleartype corefonts dbus directfb glut \
-     libnotify opengl sdl tk truetype type1 xcomposite"
+     libnotify opengl pdf sdl tk truetype type1 xcomposite"
