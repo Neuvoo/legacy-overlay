@@ -4,4 +4,4 @@ sys-kernel/neuvoo-sources-touchbook
 
 # The following packages are exempt from requiring bugs upstream, they are provided for
 # convience by us but are maintained by Always Innovating, http://alwaysinnovating.com
-sys-kernel/touchbook-sources
+sys-kernel/touchbook

@@ -16,9 +16,7 @@ IUSE=""
 HOMEPAGE="http://alwaysinnovating.com"
 DESCRIPTION="Always Innovating Touchbook Kernel."
 
-KRNL_URI="http://www.alwaysinnovating.com/release/2010-01.b/uImage"
-MOD_URI=""
-SRC_URI="${KRNL_URI} ${MOD_URI}"
+SRC_URI="http://www.alwaysinnovating.com/release/2010-01.b/uImage"
 
 KEYWORDS="arm"
 
