@@ -1,0 +1,4 @@
+<media-libs/gst-plugins-bad-9999 ~*
+<media-libs/gst-plugins-base-9999 ~*
+<media-libs/gstreamer-9999 ~*
+<media-plugins/gst-plugins-x-9999 ~*

@@ -3,8 +3,8 @@
 # $Header$
 
 # Must be before x-modular eclass is inherited
+EAPI="2"
 SNAPSHOT="yes"
-#PATCHES=""
 
 inherit x-modular
 
@@ -29,4 +29,22 @@ LICENSE="as-is"
 
 pkg_setup() {
 	CONFIGURE_OPTIONS="$(use_enable neon)"
+}
+
+src_prepare() {
+	epatch "${FILESDIR}"/omapfb-configure.patch
+	epatch "${FILESDIR}"/omapfb-configure-xextproto.patch
+	epatch "${FILESDIR}"/omapfb-driver-dpms.patch
+	epatch "${FILESDIR}"/omapfb-driver-symbols.patch
+	epatch "${FILESDIR}"/omapfb-driver-OMAPFBEnterVT.patch
+	epatch "${FILESDIR}"/omapfb-driver-style.patch
+}
+
+src_compile() {
+    ./autogen.sh || die "Auto generation of configs failed!"
+	econf || die "Configure failed!"
+}
+
+src_install() {
+	emake DESTDIR="${D}" install || die "Install failed"
 }
