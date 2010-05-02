@@ -3,5 +3,5 @@
 <sys-apps/portage-2.3 ~*
 <sys-apps/sandbox-2.3 ~*
 <sys-fs/udev-200 ~*
-<x11-base/xorg-drivers-1.8 **
-x11-drivers/xf86-video-omapfb **
+<x11-base/xorg-drivers-1.8 ~*
+x11-drivers/xf86-video-omapfb ~*
