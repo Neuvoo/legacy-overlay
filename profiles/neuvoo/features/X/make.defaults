@@ -1,2 +1,4 @@
-USE="X cleartype corefonts dbus directfb glut \
+USE="X cleartype corefonts dbus pdf tk truetype type1"
+
+#USE="X cleartype corefonts dbus directfb glut \
      libnotify opengl pdf sdl tk truetype type1 xcomposite"
