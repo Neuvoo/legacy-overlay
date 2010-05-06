@@ -2,6 +2,11 @@
 sys-kernel/neuvoo-sources
 sys-kernel/neuvoo-sources-touchbook
 
+# The following package ebuilds were created but are not developed by us, bugs should be sent to
+# their respective maintainers via the HOMEPAGE
+media-plugins/gst-plugins-ti
+media-video/omapfbplay
+
 # The following packages are exempt from requiring bugs upstream, they are provided for
 # convience by us but are maintained by Always Innovating, http://alwaysinnovating.com
 sys-kernel/touchbook

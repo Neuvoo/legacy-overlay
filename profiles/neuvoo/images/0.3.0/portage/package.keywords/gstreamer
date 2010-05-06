@@ -2,3 +2,15 @@
 <media-libs/gst-plugins-base-9999 ~*
 <media-libs/gstreamer-9999 ~*
 <media-plugins/gst-plugins-x-9999 ~*
+<media-plugins/gst-plugins-faac-9999 **
+<media-plugins/gst-plugins-faad-9999 **
+<media-plugins/gst-plugins-lame-9999 **
+<media-plugins/gst-plugins-pulse-9999 **
+<media-plugins/gst-plugins-x264-9999 **
+<media-libs/x264-9999 **
+<media-plugins/gst-plugins-base-9999 **
+<media-plugins/gst-plugins-alsa-9999 **
+<media-plugins/gst-plugins-theora-9999 **
+<media-plugins/gst-plugins-xvideo-9999 **
+<media-plugins/gst-plugins-ogg-9999 **
+<media-plugins/gst-plugins-vorbis-9999 **

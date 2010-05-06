@@ -1,4 +1,4 @@
 x11-libs/e_dbus X
-x11-libs/evas X jpeg png svg xpm
+x11-libs/evas X jpeg png svg xpm fontconfig
 x11-libs/ecore X curl
 x11-wm/enlightenment exchange
