@@ -1,1 +1,2 @@
-x11-base/xorg-server kdrive
+x11-base/xorg-server -kdrive
+app-office/abiword -plugins

@@ -1,2 +1,4 @@
 <net-misc/networkmanager-9999 ~*
 <sys-auth/polkit-9999 ~*
+<net-misc/modemmanager-9999 **
+<net-misc/cnetworkmanager-9999 **

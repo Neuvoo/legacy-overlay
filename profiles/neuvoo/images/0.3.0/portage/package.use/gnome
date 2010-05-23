@@ -1,4 +1,4 @@
-app-portage/layman git
+gnome-base/gvfs gdu
 sys-fs/udev extras
 sys-apps/parted device-mapper
 sys-auth/consolekit policykit

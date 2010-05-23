@@ -1,0 +1,2 @@
+net-libs/opal audio video sip -debug
+net-libs/ptlib video stun wav -debug
