@@ -18,7 +18,7 @@ RDEPEND=(
 )
 
 src_install() {
-	cd "${S}"/hooks/pre-sync.d/
+	cd "${S}"/squashfs-hooks/pre-sync.d/
 	insinto /etc/portage/hooks/pre-sync.d
 	doins 20-squashfs || die
 	
