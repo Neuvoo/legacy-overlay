@@ -18,6 +18,12 @@ RDEPEND=(
 )
 
 src_install() {
+	cd "${S}"/squashfs-portage/etc/conf.d
+	insinto /etc/conf.d
+	doins squashfs-portage || die
+
+	DESTTREE=/usr/lib/squashfs-portage dobin "${S}"/squashfs-portage/lib/bin/squashfs-portage-mount || die
+
 	cd "${S}"/squashfs-portage/pre-sync.d/
 	insinto /etc/portage/hooks/pre-sync.d
 	doins 20-squashfs || die
