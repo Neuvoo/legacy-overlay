@@ -1,9 +1,7 @@
-# Copyright 1999-2010 Gentoo Foundation
+# Copyright 2009-2010 Neuvoo Project
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/sys-apps/portage/portage-9999.ebuild,v 1.4 2010/04/28 07:26:51 zmedico Exp $
+# $Header: $
 
-# Require EAPI 2 since we now require at least python-2.6 (for python 3
-# syntax support) which also requires EAPI 2.
 EAPI=2
 EGIT_REPO_URI="git://gitorious.org/neuvoo/software.git"
 EGIT_BRANCH="master"
