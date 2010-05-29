@@ -13,9 +13,10 @@ LICENSE="BSD"
 KEYWORDS=""
 SLOT="0"
 
-RDEPEND=(
-	">=sys-apps/portage-9999"
-)
+RDEPEND="
+	>=sys-apps/portage-9999
+	app-misc/realpath
+"
 
 src_install() {
 	cd "${S}"/squashfs-portage/etc/conf.d
@@ -28,8 +29,16 @@ src_install() {
 	insinto /etc/portage/hooks/pre-sync.d
 	doins 20-squashfs || die
 	
+	cd "${S}"/squashfs-portage/pre-run.d/
+	insinto /etc/portage/hooks/pre-run.d
+	doins 20-squashfs || die
+	
 	elog
-	elog "Run emerge --sync to get a squashfs image."
-#	elog "Any other portage command may fail until this is done." # not yet it won't, until other hooks are implemented.
+	elog "Before portage will sync, review /etc/conf.d/squashfs-portage and create the"
+	elog "SQUASHFS_BASEDIR and SQUASHFS_MOUNT files, like so:"
+	elog '# mkdir -p $SQUASHFS_BASEDIR}'
+	elog '# mkdir -p ${SQUASHFS_MOUNT}'
 	elog
+	elog "Run emerge --sync after to get a squashfs image."
+	ewarn "Any other portage command may fail until this is done."
 }
