@@ -29,6 +29,10 @@ src_install() {
 	insinto /etc/portage/hooks/pre-sync.d
 	doins 20-squashfs || die
 	
+	cd "${S}"/squashfs-portage/pre-run.d/
+	insinto /etc/portage/hooks/pre-run.d
+	doins 20-squashfs || die
+	
 	elog
 	elog "Before portage will sync, review /etc/conf.d/squashfs-portage and create the"
 	elog "SQUASHFS_BASEDIR and SQUASHFS_MOUNT files, like so:"
@@ -36,5 +40,5 @@ src_install() {
 	elog '# mkdir -p ${SQUASHFS_MOUNT}'
 	elog
 	elog "Run emerge --sync after to get a squashfs image."
-#	ewarn "Any other portage command may fail until this is done." # not yet it won't, until other hooks are implemented.
+	ewarn "Any other portage command may fail until this is done."
 }
