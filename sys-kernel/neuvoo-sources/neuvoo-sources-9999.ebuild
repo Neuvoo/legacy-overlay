@@ -17,6 +17,6 @@ src_compile() {
 }
 
 src_install() {
-	insinto /usr/src/"${P}"
-	doinst -r "${S}"/*
+        insinto /usr/src/"${P}"
+        doins -r "${S}"/*
 }
