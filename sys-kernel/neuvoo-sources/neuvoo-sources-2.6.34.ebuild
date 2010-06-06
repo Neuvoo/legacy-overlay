@@ -12,6 +12,9 @@ IUSE=""
 HOMEPAGE="http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap-2.6.git;a=summary"
 DESCRIPTION="Linux OMAP 2.6 kernel"
 
+src_compile() {
+}
+
 src_install() {
 	insinto /usr/src/"${P}"
 	doinst -r "${S}"/*
