@@ -13,6 +13,7 @@ HOMEPAGE="http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap-2.6.git;a=
 DESCRIPTION="Linux OMAP 2.6 kernel"
 
 src_compile() {
+	:
 }
 
 src_install() {
