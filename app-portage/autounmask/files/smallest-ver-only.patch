@@ -1,0 +1,55 @@
+--- autounmask	2010-06-12 14:07:19.142036558 -0400
++++ autounmask	2010-06-12 13:56:38.616312884 -0400
+@@ -202,14 +202,14 @@
+ 	@l=split(/\n/,$r);
+ 	undef $p;
+ 	
+-	for ($x=0;$x<=$#l;$x++) {
++	for ($x=$#l-1;$x>=0;$x--) {
+ 		if ($l[$x]=~m/^- (.*) \(masked by: missing keyword\)$/) {
+ 			$l[$x]=~m/^- (.*) \(masked by: missing (.*) keyword\)$/;
+ 			$p=$1;
+ 
+ 			if ($p) {
+ 				addToKeywords($p,'**');
+-				last if ($cmdOptions{'noversions'});
++				last;
+ 			}
+ 		}
+ 		elsif ($l[$x]=~m/^- (.*) \(masked by: package.mask, (.*) keyword\)$/) {
+@@ -219,7 +219,7 @@
+ 			if ($p) {
+ 				addToKeywords($p,'~'.$arch);
+ 				addToUnmask($p);
+-				last if ($cmdOptions{'noversions'});
++				last;
+ 			}
+ 		}
+ 		elsif ($l[$x]=~m/^- (.*) \(masked by: (.*) keyword, package.mask\)$/) {
+@@ -229,7 +229,7 @@
+ 			if ($p) {
+ 				addToKeywords($p,'~'.$arch);
+ 				addToUnmask($p);
+-				last if ($cmdOptions{'noversions'});
++				last;
+ 			}
+ 		}
+ 		elsif ($l[$x]=~m/^- (.*) \(masked by: (.*) keyword\)$/) {
+@@ -238,7 +238,7 @@
+ 
+ 			if ($p) {
+ 				addToKeywords($p,'~'.$arch);
+-				last if ($cmdOptions{'noversions'});
++				last;
+ 			}
+ 		}
+ 		elsif ($l[$x]=~m/^- (.*) \(masked by: package.mask\)$/) {
+@@ -247,7 +247,7 @@
+ 			
+ 			if ($p) {
+ 				addToUnmask($p);
+-				last if ($cmdOptions{'noversions'});
++				last;
+ 			}
+ 		}
+ 		elsif ($l[$x]=~m/^- (.*) \(Change USE: (.*)\)$/) {
