@@ -1,0 +1,244 @@
+From 2f74c4f7c000d842f740ba5710530886151da146 Mon Sep 17 00:00:00 2001
+From: Jacob Godserv <jacobgodserv@gmail.com>
+Date: Tue, 8 Jun 2010 00:51:53 -0400
+Subject: [PATCH 39/52] Re-wrote hooks API so the option to save locally or globally is available.
+
+---
+ bin/hooks.sh                                  |   94 +++++++++++++++++++-----
+ pym/portage/hooks.py                          |    9 ++-
+ pym/portage/tests/hooks/test_HookDirectory.py |   30 ++++++--
+ 3 files changed, 101 insertions(+), 32 deletions(-)
+
+diff --git a/bin/hooks.sh b/bin/hooks.sh
+index cccd0c2..4d73a2d 100755
+--- a/bin/hooks.sh
++++ b/bin/hooks.sh
+@@ -10,6 +10,27 @@
+ # hooks within a prepared environment, as well as acting as an API interface
+ # between hooks and portage.
+ 
++
++# Local variables listed here.
++# Using the local keyword makes no difference since this script is being sourced
++# so we'll have to unset them manually later. Be sure to keep the local_vars
++# array up-to-date.
++hook_files=( * )
++hook_args=( "$@" )
++hook_verbosity="0"
++hooks_tmpdir_settings="${hooks_tmpdir}/settings/"
++hooks_tmpdir_envonly="${hooks_tmpdir}/envonly/"
++
++# Local variables listed here.
++# Using the local keyword makes no difference since this script is being sourced
++# so we'll have to unset them manually later. Be sure to keep these arrays
++# up-to-date.
++hook_local_vars=( "hook_files" "hook_args" "hook_verbosity" ) # variables unset for hooks
++quit_local_vars=( "hooks_tmpdir_settings" "hooks_tmpdir_envonly" "${hook_local_vars[@]}" ) # variables unset at quit
++
++mkdir "${hooks_tmpdir_settings}" || exit $?
++mkdir "${hooks_tmpdir_envonly}" || exit $?
++
+ # @FUNCTION: hooks_savesetting
+ # @DESCRIPTION:
+ # This function saves a variable in the environment into portage's internal
+@@ -17,13 +38,39 @@
+ # environment for ebuilds. The changes made here are effective until portage
+ # quits, which means all ebuilds from here on will read them.
+ # 
+-# Takes one argument, which is the variable name to save. Arrays are allowed
+-# but will be read in serialized string form.
+-# 
+-# NOTE: to configure only the environment of the currently running ebuild, while
+-# running inside an ebuild hook, simply set the variable inside the hook.
++# Takes one argument, which is the variable name to save. Arrays are allowed,
++# but portage will read them as strings only.
+ function hooks_savesetting () {
++	hooks_savevarto "$1" "${hooks_tmpdir_settings}" || return $?
++}
++
++# @FUNCTION: hooks_saveenvonly
++# @DESCRIPTION:
++# Like hooks_savesetting, except that the variable will only be saved so that
++# future hooks and, if it is an ebuild hook, the current ebuild will see it. In
++# other words, the big difference is this change isn't saved in portage's
++# internal settings variable while portage is running.
++# 
++# Takes one argument, which is the variable name to save. Arrays are allowed.
++function hooks_saveenvonly () {
++	hooks_savevarto "$1" "${hooks_tmpdir_envonly}" || return $?
++}
++
++# @FUNCTION: hooks_savevarto
++# @DESCRIPTION:
++# Do not call directly.
++#
++# Used by hook APIs to serialize a variable to a file inside the specified
++# directory.
++# 
++# Takes two arguments:
++# * First is the variable name to save. Arrays are allowed, but if portage is to
++#   read this variable back, it will be read as a string.
++# * Second is the directory, which must exist. The variable name, after
++#   processed by basename, will be used as the file name.
++function hooks_savevarto () {
+ 	local unsecure_varname="$1"
++	local directory="$2"
+ 	local varname="$(basename ${unsecure_varname})"
+ 	
+ 	if [[ "${unsecure_varname}" != "${varname}" ]]; then
+@@ -31,8 +78,13 @@ function hooks_savesetting () {
+ 		return 1
+ 	fi
+ 	
+-	# hack: removes the beginning 'declare ... var=[quote]' and ending quote. Suggestions welcome.
+-	declare -p "${varname}" | sed '1s|^[^=]*=['"'"'"]||; $s|['"'"'"]$||' > "${hooks_tmpdir}/${varname}" || return $?
++	if [ ! -d "${directory}" ]; then
++		eerror "${directory} is not a directory"
++		return 1
++	fi
++	
++	# removes the beginning junk we don't want, up to the equals sign
++	declare -p "${varname}" | sed '1s|^[^=]*=||' > "${directory}/${varname}" || return $?
+ }
+ 
+ # @FUNCTION: hooks_killportage
+@@ -54,15 +106,6 @@ function hooks_killportage () {
+ 	kill "${args[@]}"
+ }
+ 
+-# Local variables listed here.
+-# Using the local keyword makes no difference since this script is being sourced
+-# so we'll have to unset them manually later. Be sure to keep the local_vars
+-# array up-to-date.
+-hook_files=( * )
+-hook_args=( "$@" )
+-hook_verbosity="0"
+-local_vars=( "hook_files" "hook_args" "hook_verbosity" )
+-
+ for (( i = 0 ; i < ${#hook_args[@]} ; i++ )); do
+ 	if [[ "${hook_args[$i]}" == "--verbose" ]]; then
+ 		hook_verbosity="1"
+@@ -71,7 +114,6 @@ done
+ 
+ for (( i = 0 ; i < ${#hook_files[@]} ; i++ )); do
+ 	hook="${hook_files[$i]}"
+-	
+ 	if [[ ! -f "${hook}" ]]; then
+ 		[ "${hook_verbosity}" -gt 0 ] && ewarn "Only files are recognized in a hook directory: ${hook}"
+ 		continue
+@@ -79,13 +121,25 @@ for (( i = 0 ; i < ${#hook_files[@]} ; i++ )); do
+ 	
+ 	[ "${hook_verbosity}" -gt 0 ] && einfo "Executing hook ${hook}..."
+ 	# We use eval so the hook_args gets expanded before it is unset
+-	( eval unset "${local_vars[@]}" '&&' source "${hook}" "${hook_args[@]}" )
++	( eval unset "${hook_local_vars[@]}" '&&' source "${hook}" "${hook_args[@]}" )
+ 	
+ 	exit_code="$?"
+ 	if [[ "${exit_code}" != "0" ]]; then
+-		eerror "Hook returned with exit code ${exit_code}"
++		eerror "Hook $(pwd)/${hook} returned with exit code ${exit_code}"
+ 		exit "${exit_code}"
+ 	fi
++	
++	# We need to re-export variables that hooks saved. The goal is to let the
++	# specifically-saved variables escape the hook "( ... )" subshell and carry
++	# over into the next hook or an ebuild env.
++	var_files=( "${hooks_tmpdir_envonly}"/* "${hooks_tmpdir_settings}"/* )
++	for (( varI = 0 ; varI < ${#var_files[@]} ; varI++ )); do
++		# if there are no files, the variable points to a non-existant file, which we want to catch here
++		if [ ! -f "${var_files[$varI]}" ]; then
++			continue;
++		fi
++		eval declare -x "$(basename ${var_files[$varI]})"="$(cat ${var_files[$varI]})" || exit $?
++	done
+ done
+ 
+-unset "${local_vars[@]}"
++unset "${quit_local_vars[@]}"
+diff --git a/pym/portage/hooks.py b/pym/portage/hooks.py
+index 2570067..d0db5e1 100644
+--- a/pym/portage/hooks.py
++++ b/pym/portage/hooks.py
+@@ -50,12 +50,13 @@ class HookDirectory(object):
+ 			try:
+ 				command=[BASH_BINARY, '-c', 'cd "'+path+'" && source "' + PORTAGE_BIN_PATH + '/isolated-functions.sh" && declare -xr hooks_tmpdir="'+tmpdir+'" && source ' + ' '.join(command)]
+ 				if self.myopts and "--verbose" in self.myopts:
+-					self.output.einfo('Executing hook "' + self.path + '"...')
++					self.output.einfo('Executing hooks directory "' + self.path + '"...')
+ 				code = spawn(mycommand=command, env=self.settings.environ())
+ 				if code: # if failure
+-					raise PortageException('!!! Hook %s failed with exit code %s' % (self.path, code))
++					raise PortageException('!!! Hook directory %s failed with exit code %s' % (self.path, code))
+ 					
+-				self.settings = self.merge_to_env (self.settings, tmpdir)
++				if os.path.exists(tmpdir+'/settings/'):
++					self.settings = self.merge_to_env (self.settings, tmpdir+'/settings/')
+ 				
+ 			finally:
+ 				rmtree(tmpdir)
+@@ -73,7 +74,7 @@ class HookDirectory(object):
+ 			for varname in files:
+ 				file = open(os.path.join(path, varname), 'r')
+ 				# read the file, remove the very last newline, and make the escaped double-quotes just plain double-quotes (since only bash needs them to be escaped, not python)
+-				vardata = file.read()[:-1].replace('\"','"')
++				vardata = file.read()[:-1].replace('\"','"').strip('"')
+ 				existingenv[varname] = vardata
+ 				existingenv.backup_changes(varname)
+ 		
+diff --git a/pym/portage/tests/hooks/test_HookDirectory.py b/pym/portage/tests/hooks/test_HookDirectory.py
+index e8b57bc..5e1cebc 100644
+--- a/pym/portage/tests/hooks/test_HookDirectory.py
++++ b/pym/portage/tests/hooks/test_HookDirectory.py
+@@ -25,27 +25,41 @@ class HookDirectoryTestCase(TestCase):
+ 		Based on test_PackageKeywordsFile.py
+ 		"""
+ 
+-		tmp_dir_path = self.BuildTmp('/etc/portage/hooks/test.d')
++		self.tmp_dir_path = self.BuildTmp('/etc/portage/hooks/test.d')
+ 		try:
+ 			settings = config()
+-			settings["PORTAGE_CONFIGROOT"] = tmp_dir_path
++			settings["PORTAGE_CONFIGROOT"] = self.tmp_dir_path
+ 			settings["FEATURES"] += " hooks"
+-			hooks = HookDirectory('test', settings)
++			hooks = HookDirectory(phase='test', settings=settings)
+ 			hooks.execute()
+-			self.assert_(settings["test"] == "this is a test")
+-			self.assert_(file_len(tmp_dir_path+'/output') == 1)
++			self.assert_(settings["test"] == "this is another test")
++			self.assert_(settings["test2"] == "this is a second test")
++			self.assert_(settings["hookonlytest"] == "")
++			self.assert_(file_len(self.tmp_dir_path+'/output') == 2)
+ 		finally:
+-			rmtree(tmp_dir_path)
++			rmtree(self.tmp_dir_path)
+ 	
+ 	def BuildTmp(self, tmp_subdir):
+ 		tmp_dir = mkdtemp()
+ 		hooks_dir = tmp_dir + '/' + tmp_subdir
+ 		os.makedirs(hooks_dir)
+ 		
+-		f = open(hooks_dir+'/testhook', 'w')
++		f = open(hooks_dir+'/1-testhook', 'w')
+ 		f.write('#!/bin/bash\n')
+ 		f.write('test="this is a test"\n')
+-		f.write('echo hi > '+tmp_dir+'/output && hooks_savesetting test && exit 0\n')
++		f.write('hookonlytest="portage cannot see me!"\n')
++		f.write('echo hi >> '+tmp_dir+'/output && hooks_savesetting test && hooks_saveenvonly hookonlytest\n')
++		f.write('exit $?\n')
++		f.close()
++		
++		f = open(hooks_dir+'/2-testhook', 'w')
++		f.write('#!/bin/bash\n')
++		f.write('if [[ "${test}" != "this is a test" ]]; then echo "Unexpected test value: ${test}"; exit 3; fi\n');
++		f.write('if [[ "${hookonlytest}" != "portage cannot see me!" ]]; then echo "Unexpected hookonlytest value: ${hookonlytest}"; exit 3; fi\n');
++		f.write('test="this is another test"\n')
++		f.write('test2="this is a second test"\n')
++		f.write('echo hey >> '+tmp_dir+'/output && hooks_savesetting test && hooks_savesetting test2\n')
++		f.write('exit $?\n')
+ 		f.close()
+ 		
+ 		return tmp_dir
+-- 
+1.6.4.4
+

@@ -1,0 +1,41 @@
+From 5a8f5fde16affb3956ed4c56eb0295c5b7782a5f Mon Sep 17 00:00:00 2001
+From: Jacob Godserv <jacobgodserv@gmail.com>
+Date: Thu, 27 May 2010 20:13:32 -0400
+Subject: [PATCH 21/52] Only execute hooks if they are desired in FEATURES
+
+---
+ pym/_emerge/main.py  |    3 +--
+ pym/portage/hooks.py |    3 +++
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/pym/_emerge/main.py b/pym/_emerge/main.py
+index 545ca28..6b14567 100644
+--- a/pym/_emerge/main.py
++++ b/pym/_emerge/main.py
+@@ -1184,8 +1184,7 @@ def emerge_main():
+ 	portdb = trees[settings["ROOT"]]["porttree"].dbapi
+ 
+ 	# Portage configured; let's let a hook set everything up before we do anything more
+-	if "hooks" in settings['FEATURES']:
+-		portage.hooks.HookDirectory(phase='pre-run', settings=settings, myopts=myopts, myaction=myaction, mytargets=myfiles).execute()
++	portage.hooks.HookDirectory(phase='pre-run', settings=settings, myopts=myopts, myaction=myaction, mytargets=myfiles).execute()
+ 
+ 	rval = profile_check(trees, myaction)
+ 	if rval != os.EX_OK:
+diff --git a/pym/portage/hooks.py b/pym/portage/hooks.py
+index 7a5e9fb..415041c 100644
+--- a/pym/portage/hooks.py
++++ b/pym/portage/hooks.py
+@@ -58,6 +58,9 @@ class HookFile (object):
+ 		self.settings = settings
+ 	
+ 	def execute (self):
++		if "hooks" not in settings['FEATURES']:
++			return
++
+ 		path = normalize_path(self.path)
+ 		
+ 		if not os.path.exists(path):
+-- 
+1.6.4.4
+

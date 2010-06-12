@@ -1,0 +1,90 @@
+From 3b8359f58a8520b57a48af89e79259e9612076d1 Mon Sep 17 00:00:00 2001
+From: Jacob Godserv <jacobgodserv@gmail.com>
+Date: Sun, 21 Mar 2010 01:25:45 -0400
+Subject: [PATCH 05/52] Created (basic for now) test suite for hooks
+
+---
+ pym/portage/tests/hooks/__init__.py           |    5 ++
+ pym/portage/tests/hooks/test_HookDirectory.py |   54 +++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+), 0 deletions(-)
+ create mode 100644 pym/portage/tests/hooks/__init__.py
+ create mode 100644 pym/portage/tests/hooks/__test__
+ create mode 100644 pym/portage/tests/hooks/test_HookDirectory.py
+
+diff --git a/pym/portage/tests/hooks/__init__.py b/pym/portage/tests/hooks/__init__.py
+new file mode 100644
+index 0000000..95dfcfc
+--- /dev/null
++++ b/pym/portage/tests/hooks/__init__.py
+@@ -0,0 +1,5 @@
++# tests/portage/hooks/__init__.py -- Portage Unit Test functionality
++# Copyright 2010 Gentoo Foundation
++# Distributed under the terms of the GNU General Public License v2
++# $Id$
++
+diff --git a/pym/portage/tests/hooks/__test__ b/pym/portage/tests/hooks/__test__
+new file mode 100644
+index 0000000..e69de29
+diff --git a/pym/portage/tests/hooks/test_HookDirectory.py b/pym/portage/tests/hooks/test_HookDirectory.py
+new file mode 100644
+index 0000000..070e07e
+--- /dev/null
++++ b/pym/portage/tests/hooks/test_HookDirectory.py
+@@ -0,0 +1,54 @@
++# test_HookDirectory.py -- Portage Unit Testing Functionality
++# Copyright 2010 Gentoo Foundation
++# Distributed under the terms of the GNU General Public License v2
++# $Id$
++
++from portage import os
++from portage.hooks import HookDirectory
++from portage.package.ebuild.config import config
++from portage.tests import TestCase
++from tempfile import mkdtemp
++
++class HookDirectoryTestCase(TestCase):
++	
++	def testHookDirectory(self):
++		"""
++		Tests to be sure a hook loads and reads the right settings
++		Based on test_PackageKeywordsFile.py
++		"""
++
++		tmp_dir = self.BuildTmp()
++		try:
++			settings = config()
++			settings["PORTAGE_CONFIGROOT"] = tmp_dir
++			hooks = HookDirectory('test', settings)
++			hooks.execute()
++		finally:
++			self.NukeTmp(tmp_dir)
++	
++	def BuildTmp(self):
++		tmp_dir = mkdtemp()
++		hooks_dir = tmp_dir+'/etc'
++		os.mkdir(hooks_dir)
++		hooks_dir = hooks_dir+'/portage'
++		os.mkdir(hooks_dir)
++		hooks_dir = hooks_dir+'/hooks'
++		os.mkdir(hooks_dir)
++		hooks_dir = hooks_dir+'/test.d'
++		os.mkdir(hooks_dir)
++		
++		f = open(hooks_dir+'/testhook', 'w')
++		f.write('#!/bin/bash\n')
++		f.write('exit 0\n')
++		f.close()
++		
++		return tmp_dir
++
++	def NukeTmp(self, tmp_dir):
++		hooks_dir = tmp_dir+'/etc/portage/hooks/test.d'
++		os.unlink(hooks_dir+'/testhook')
++		os.rmdir(tmp_dir+'/etc/portage/hooks/test.d')
++		os.rmdir(tmp_dir+'/etc/portage/hooks')
++		os.rmdir(tmp_dir+'/etc/portage')
++		os.rmdir(tmp_dir+'/etc')
++		os.rmdir(tmp_dir)
+-- 
+1.6.4.4
+

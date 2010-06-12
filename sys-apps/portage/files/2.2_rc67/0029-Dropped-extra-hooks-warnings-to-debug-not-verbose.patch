@@ -1,0 +1,36 @@
+From 68adcd85a876912ceafb1c0bb9bc5648c8b6d6a6 Mon Sep 17 00:00:00 2001
+From: Jacob Godserv <jacobgodserv@gmail.com>
+Date: Fri, 28 May 2010 01:02:31 -0400
+Subject: [PATCH 29/52] Dropped extra hooks warnings to --debug, not --verbose
+
+---
+ pym/portage/hooks.py |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/pym/portage/hooks.py b/pym/portage/hooks.py
+index dedfb97..6dd55e6 100644
+--- a/pym/portage/hooks.py
++++ b/pym/portage/hooks.py
+@@ -34,15 +34,15 @@ class HookDirectory(object):
+ 		path = normalize_path(path)
+ 		
+ 		if not os.path.exists(path):
+-			if self.myopts and "--verbose" in self.myopts:
+-				self.output.ewarn('This hook path could not be found: ' + path)
++			if self.myopts and "--debug" in self.myopts:
++				self.output.ewarn('This hook path could not be found; ignored: ' + path)
+ 			return
+ 		
+ 		if os.path.isdir(path):
+ 			for parent, dirs, files in os.walk(path):
+ 				for dir in dirs:
+-					if self.myopts and "--verbose" in self.myopts:
+-						self.output.ewarn('Directory within hook directory not allowed: ' + path+'/'+dir)
++					if self.myopts and "--debug" in self.myopts:
++						self.output.ewarn('Directory within hook directory not allowed; ignored: ' + path+'/'+dir)
+ 				for filename in files:
+ 					HookFile(os.path.join(path, filename), self.settings, self.myopts, self.myaction, self.mytargets).execute()
+ 		
+-- 
+1.6.4.4
+

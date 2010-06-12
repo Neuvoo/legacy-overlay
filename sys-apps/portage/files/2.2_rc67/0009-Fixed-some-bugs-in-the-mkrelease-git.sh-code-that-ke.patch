@@ -1,0 +1,29 @@
+From ad9616e95bc78b3dd8c876d888a607065762e200 Mon Sep 17 00:00:00 2001
+From: Jacob Godserv <jacobgodserv@gmail.com>
+Date: Sun, 21 Mar 2010 18:38:20 -0400
+Subject: [PATCH 09/52] Fixed some bugs in the mkrelease-git.sh code that kept it from checking out the latest trunk properly
+
+---
+ mkrelease-git.sh |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/mkrelease-git.sh b/mkrelease-git.sh
+index 7fab1bd..4c22d39 100755
+--- a/mkrelease-git.sh
++++ b/mkrelease-git.sh
+@@ -79,10 +79,9 @@ cd "${SOURCE_DIR}" || die "SOURCE_DIR doesn't exist?"
+ 
+ if [ ! -n "${NO_REMOTE}" ]; then
+ 	echo ">>> Starting Git export"
+-	git clone "${REPOSITORY}" || die "git clone failed"
++	git clone "${REPOSITORY}" . || die "git clone failed"
+ 	gitarchive_opts=""
+-	[ -n "$CHANGELOG_REVISION" ] && gitarchive_opts=+="${CHANGELOG_REVISION}"
+-	git archive $gitarchive_opts | tar -x -C "${SOURCE_DIR}" || die "git export failed"
++	[ -n "$CHANGELOG_REVISION" ] && ( git reset "$CHANGELOG_REVISION" || die "git reset failed" )
+ fi
+ 
+ echo ">>> Creating Changelog"
+-- 
+1.6.4.4
+

@@ -1,0 +1,27 @@
+From 7c4e181f5cbdb873aaab531b100f48e8298040f0 Mon Sep 17 00:00:00 2001
+From: Jacob Godserv <jacobgodserv@gmail.com>
+Date: Tue, 8 Jun 2010 03:48:05 -0400
+Subject: [PATCH 47/52] Removed old post-ebuild hooks
+
+---
+ pym/portage/package/ebuild/doebuild.py |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/pym/portage/package/ebuild/doebuild.py b/pym/portage/package/ebuild/doebuild.py
+index 6ad32b7..d05062e 100644
+--- a/pym/portage/package/ebuild/doebuild.py
++++ b/pym/portage/package/ebuild/doebuild.py
+@@ -937,8 +937,8 @@ def doebuild(myebuild, mydo, myroot, mysettings, debug=0, listonly=0,
+ 
+ 		fakeroot = "fakeroot" in mysettings.features
+ 
+-		ebuild_sh = _shell_quote(ebuild_sh_binary) + " %s && source \""+HOOKS_SH_BINARY+"\" --do-post-ebuild"
+-		misc_sh = _shell_quote(misc_sh_binary) + " dyn_%s && source \""+HOOKS_SH_BINARY+"\" --do-post-ebuild"
++		ebuild_sh = _shell_quote(ebuild_sh_binary) + " %s"
++		misc_sh = _shell_quote(misc_sh_binary) + " dyn_%s"
+ 
+ 		# args are for the to spawn function
+ 		actionmap = {
+-- 
+1.6.4.4
+

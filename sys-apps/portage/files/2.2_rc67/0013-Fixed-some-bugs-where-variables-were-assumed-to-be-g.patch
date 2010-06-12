@@ -1,0 +1,32 @@
+From 32e0333c2d1df9958023d742228f4d24fc0f8729 Mon Sep 17 00:00:00 2001
+From: Jacob Godserv <jacobgodserv@gmail.com>
+Date: Sun, 21 Mar 2010 19:36:55 -0400
+Subject: [PATCH 13/52] Fixed some bugs where variables were assumed to be global but weren't
+
+---
+ pym/portage/hooks.py |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/pym/portage/hooks.py b/pym/portage/hooks.py
+index 17f3148..ccdc85f 100644
+--- a/pym/portage/hooks.py
++++ b/pym/portage/hooks.py
+@@ -66,12 +66,12 @@ class HookFile (object):
+ 		if os.path.isfile(path):
+ 			command=[BASH_BINARY, path]
+ 			if self.myopts:
+-				for myopt in myopts:
++				for myopt in self.myopts:
+ 					command.extend(['--opt', myopt])
+ 			if self.myaction:
+-				command.extend(['--action', myaction])
++				command.extend(['--action', self.myaction])
+ 			if self.myfiles:
+-				for myfile in myfiles:
++				for myfile in self.myfiles:
+ 					command.extend(['--file', myfile])
+ 			
+ 			code = spawn(mycommand=command, env=self.settings.environ())
+-- 
+1.6.4.4
+
