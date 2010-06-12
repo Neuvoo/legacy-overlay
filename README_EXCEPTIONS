@@ -4,6 +4,7 @@ sys-kernel/neuvoo-sources-touchbook
 
 # The following package ebuilds were created but are not developed by us, bugs should be sent to
 # their respective maintainers via the HOMEPAGE
+sys-apps/libpnd
 media-plugins/gst-plugins-ti
 media-video/omapfbplay
 
