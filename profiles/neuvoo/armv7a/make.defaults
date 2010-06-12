@@ -1,3 +1,4 @@
+ARCH="arm"
 CHOST="armv7a-unknown-linux-gnueabi"
 MARCH_TUNE="-march=armv7-a -mtune=cortex-a8 -mfpu=vfp -mfloat-abi=softfp"
 CFLAGS="-Os -pipe ${MARCH_TUNE} -fomit-frame-pointer -ftree-vectorize"
