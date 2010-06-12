@@ -19,7 +19,7 @@ RDEPEND="${DEPEND}
 		sys-apps/portage"
 
 src_prepare() {
-	# reported to bug 
+	# reported to bug #323705
 	epatch "${FILESDIR}/smallest-ver-only.patch"
 }
 
