@@ -107,7 +107,7 @@ src_prepare() {
 		fi
 		epatch "${WORKDIR}/${PN}-${PATCHVER}.patch"
 	fi
-	epatch "${FILESDIR}/${PN}-${PATCHVER}-neuvoo.patch"
+	epatch "${FILESDIR}/${PATCHVER}/*.patch"
 	einfo "Setting portage.VERSION to ${PVR} ..."
 	sed -i "s/^VERSION=.*/VERSION=\"${PVR}\"/" pym/portage/__init__.py || \
 		die "Failed to patch portage.VERSION"
