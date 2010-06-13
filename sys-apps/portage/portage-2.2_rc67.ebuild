@@ -106,8 +106,8 @@ src_prepare() {
 				|| die "failed to remove portageq helper symlink"
 		fi
 		epatch "${WORKDIR}/${PN}-${PATCHVER}.patch"
-		epatch "${WORKDIR}/${PN}-${PATCHVER}-neuvoo.patch"
 	fi
+	epatch "${FILESDIR}/${PN}-${PATCHVER}-neuvoo.patch"
 	einfo "Setting portage.VERSION to ${PVR} ..."
 	sed -i "s/^VERSION=.*/VERSION=\"${PVR}\"/" pym/portage/__init__.py || \
 		die "Failed to patch portage.VERSION"
