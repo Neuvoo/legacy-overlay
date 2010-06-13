@@ -1,0 +1,170 @@
+From 5b91b0c54c54cf77d4cab1c033885a0b9d423ea4 Mon Sep 17 00:00:00 2001
+From: Jacob Godserv <jacobgodserv@gmail.com>
+Date: Fri, 28 May 2010 01:03:10 -0400
+Subject: [PATCH 30/52] Hooks documentation more or less written
+
+---
+ doc/config.docbook       |    1 +
+ doc/config/hooks.docbook |   78 ++++++++++++++++++++++++++++++++++++++++++++++
+ doc/portage.docbook      |    1 +
+ man/portage.5            |   30 +++++++++++++++++
+ 4 files changed, 110 insertions(+), 0 deletions(-)
+ create mode 100644 doc/config/hooks.docbook
+
+diff --git a/doc/config.docbook b/doc/config.docbook
+index 88009df..c2bd0ed 100644
+--- a/doc/config.docbook
++++ b/doc/config.docbook
+@@ -2,4 +2,5 @@
+ <title>Configuration</title>
+ &config_bashrc;
+ &config_set;
++&config_hooks;
+ </part>
+diff --git a/doc/config/hooks.docbook b/doc/config/hooks.docbook
+new file mode 100644
+index 0000000..c382815
+--- /dev/null
++++ b/doc/config/hooks.docbook
+@@ -0,0 +1,78 @@
++<chapter id='config-hooks'>
++	<title>Hooks Configuration</title>
++	<sect1 id='config-hooks-locations'>
++		<title>Hooks Locations</title>
++		<para>
++		If a hook directory exists, they will either be executed before
++		or after that particular stage. The hooks inside each directory
++		will be executed by bash. Each one will receive the environment
++		of an ebuild, so they are capable of inherit, einfo, and other
++		common commands (if you find them useful). Avoid commands that
++		may trigger changes in the filesystem!
++		</para>
++		
++		<para>
++		A hook is presently not allowed to alter portage's execution,
++		but they can supplement it with additional functionality. Since
++		hooks execute in a bash environment, they are told the parent
++		process ID, which can be used to kill the parent (nicely,
++		please) if absolutely needed. This might be useful in a pre-sync
++		script.
++		</para>
++		
++		<para>
++		When a hook is called, any of the following arguments are
++		passed:
++		<cmdsynopsis>
++			<command>/bin/bash <replaceable>...</replaceable></command><sbr/>
++
++			<arg>--opt <replaceable>portage arguments, always translated to long form, given by user at the prompt, such as "--verbose" or "--newuse"</replaceable></arg><sbr/>
++
++			<arg>--action <replaceable>a single action being performed by portage, such as "depclean", "sync", or an ebuild phase</replaceable></arg><sbr/>
++
++			<arg>--target <replaceable>the thing to perform the action with or on</replaceable></arg>
++		</cmdsynopsis>
++		</para>
++		
++		<para>
++		As of this writing, the following hook directories are
++		supported. It can be assumed that the above arguments apply
++		except wherever described differently.
++		</para>
++		
++		<itemizedlist>
++			<listitem><para><filename>/etc/portage/hooks/pre-ebuild.d/</filename> - executed before every ebuild execution. Never receives --opt, and --target is set to the full path of the ebuild.</para></listitem>
++			<listitem><para><filename>/etc/portage/hooks/post-ebuild.d/</filename> - yet to be implemented</para></listitem>
++			<listitem><para><filename>/etc/portage/hooks/pre-run.d/</filename> - executed before portage considers most things, including proper permissions and validity of arguments.</para></listitem>
++			<listitem><para><filename>/etc/portage/hooks/post-run.d/</filename> - executed after portage is done. It should run regardless of any errors or signals sent, but this cannot be guaranteed for certain scenarios (such as when the KILL signal is received). No information is available concerning the reason portage is exiting. This is a limitation of python itself.</para></listitem>
++			<listitem><para><filename>/etc/portage/hooks/pre-sync.d/</filename> - executed before portage synchronizes the portage tree.</para></listitem>
++			<listitem><para><filename>/etc/portage/hooks/post-sync.d/</filename> - executed after portage has successfully synchronized the portage tree. Presently you must use a combination of pre-sync and post-run to catch sync failures if desired.</para></listitem>
++		</itemizedlist>
++	</sect1>
++	<sect1 id='config-hooks-skeleton-hook'>
++		<title>Skeleton Hook</title>
++		<para>
++		Most hooks will parse the options at the beginning and look for
++		specific things. This skeleton hook provides that functionality
++		to get you started. Replace the colons with actual code where
++		desired.
++		</para>
++		<programlisting>
++		#!/bin/bash
++
++		einfo "This is an example hook."
++		while [[ "$1" != "" ]]; do
++			if [[ "$1" == "--opt" ]]; then
++				:
++			elif [[ "$1" == "--action" ]]; then
++				:
++			elif [[ "$1" == "--target" ]]; then
++				:
++			else
++				ewarn "Unknown hook option: $1 $2"
++			fi
++			shift 2
++		done
++		</programlisting>
++	</sect1>
++</chapter>
+diff --git a/doc/portage.docbook b/doc/portage.docbook
+index 999103a..c754352 100644
+--- a/doc/portage.docbook
++++ b/doc/portage.docbook
+@@ -23,6 +23,7 @@
+ 	<!ENTITY config SYSTEM "config.docbook">
+ 	<!ENTITY config_bashrc SYSTEM "config/bashrc.docbook">
+ 	<!ENTITY config_set SYSTEM "config/sets.docbook">
++	<!ENTITY config_hooks SYSTEM "config/hooks.docbook">
+ ]>
+ 
+ <book id="portage" lang="en">
+diff --git a/man/portage.5 b/man/portage.5
+index 40bf89f..180c7d3 100644
+--- a/man/portage.5
++++ b/man/portage.5
+@@ -59,6 +59,12 @@ package.use
+ repos.conf
+ .fi
+ .TP
++.BR /etc/portage/env/
++package-specific bashrc files
++.TP
++.BR /etc/portage/hooks/
++portage pre/post hooks
++.TP
+ .BR /etc/portage/profile/
+ site-specific overrides of \fB/etc/make.profile/\fR
+ .TP
+@@ -616,6 +622,30 @@ masters = gentoo kde
+ .fi
+ .RE
+ .TP
++.BR /etc/portage/env/
++.RS
++In this directory additional package-specific bashrc files can be created.
++Portage will source all of them after \fB/etc/portage/bashrc\fR in the following
++order:
++.nr step 1 1
++.IP \n[step]. 3
++/etc/portage/env/${CATEGORY}/${PN}
++.IP \n+[step].
++/etc/portage/env/${CATEGORY}/${PN}:${SLOT}
++.IP \n+[step].
++/etc/portage/env/${CATEGORY}/${P}
++.IP \n+[step].
++/etc/portage/env/${CATEGORY}/${PF}
++.RE
++.TP
++.BR /etc/portage/hooks/
++.RS
++In this directory, portage hooks are executed before each ebuild phase,
++before and after synchronization, and before and after portage runs
++themselves. Please see the DocBook documentation for detailed
++information.
++.RE
++.TP
+ .BR /usr/portage/metadata/
+ .RS
+ .TP
+-- 
+1.6.4.4
+

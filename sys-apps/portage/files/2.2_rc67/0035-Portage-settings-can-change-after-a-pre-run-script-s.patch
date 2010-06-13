@@ -1,0 +1,34 @@
+From 7119595be57fbf1d1a38cc8c4f8e217620b2f172 Mon Sep 17 00:00:00 2001
+From: Jacob Godserv <jacobgodserv@gmail.com>
+Date: Thu, 3 Jun 2010 11:48:27 -0400
+Subject: [PATCH 35/52] Portage settings can change after a pre-run script, so be sure to reload them before doing anything more
+
+---
+ pym/_emerge/main.py |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/pym/_emerge/main.py b/pym/_emerge/main.py
+index 06c1d57..1f72a57 100644
+--- a/pym/_emerge/main.py
++++ b/pym/_emerge/main.py
+@@ -1182,12 +1182,15 @@ def emerge_main():
+ 	# Portage needs to ensure a sane umask for the files it creates.
+ 	os.umask(0o22)
+ 	settings, trees, mtimedb = load_emerge_config()
++
++	# Portage configured; let's let hooks run before we do anything more
++	portage.hooks.HookDirectory(phase='pre-run', settings=settings, myopts=myopts, myaction=myaction, mytargets=myfiles).execute()
++
++	settings, trees, mtimedb = load_emerge_config() # once more, since pre-run might've done something
+ 	portdb = trees[settings["ROOT"]]["porttree"].dbapi
+ 
+ 	# Have post-run hooks executed whenever portage quits
+ 	portage.process.atexit_register(portage.hooks.HookDirectory(phase='post-run', settings=settings, myopts=myopts, myaction=myaction, mytargets=myfiles).execute)
+-	# Portage configured; let's let hooks run before we do anything more
+-	portage.hooks.HookDirectory(phase='pre-run', settings=settings, myopts=myopts, myaction=myaction, mytargets=myfiles).execute()
+ 
+ 	rval = profile_check(trees, myaction)
+ 	if rval != os.EX_OK:
+-- 
+1.6.4.4
+

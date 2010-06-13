@@ -1,0 +1,35 @@
+From 79556fbbb9810a8b0edd3cbc59733ba1a7353992 Mon Sep 17 00:00:00 2001
+From: Jacob Godserv <jacobgodserv@gmail.com>
+Date: Tue, 8 Jun 2010 01:37:13 -0400
+Subject: [PATCH 43/52] Better (i.e. less buggy) handling of hooks_tmpdir in ebuild.sh
+
+---
+ bin/ebuild.sh |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/bin/ebuild.sh b/bin/ebuild.sh
+index 8913a61..7e94f46 100755
+--- a/bin/ebuild.sh
++++ b/bin/ebuild.sh
+@@ -1758,7 +1758,7 @@ preprocess_ebuild_env() {
+ 
+ # Process pre-ebuild hook
+ oldwd="$(pwd)"
+-hooks_tmpdir="${PORTAGE_TMPDIR}/hooks"
++hooks_tmpdir="${T}/hooks"
+ hooks_dir="${PORTAGE_CONFIGROOT}/${HOOKS_PATH}/pre-ebuild.d"
+ ( [ ! -d "${hooks_dir}" ] && exit 1 ) || cd "${hooks_dir}"
+ exit_code="$?"
+@@ -1766,8 +1766,7 @@ if [[ "${exit_code}" != "0" ]]; then
+ 	# mimicks behavior in hooks.py
+ 	debug-print "This hook path could not be found; ignored: ${hooks_dir}"
+ else
+-	source "${HOOKS_SH_BINARY}" --action "${EBUILD_PHASE}" --target "${EBUILD}"
+-	rm -rf "${hooks_tmpdir}"
++	mkdir "${hooks_tmpdir}" && source "${HOOKS_SH_BINARY}" --action "${EBUILD_PHASE}" --target "${EBUILD}"
+ 	exit_code="$?"
+ 	if [[ "${exit_code}" != "0" ]]; then
+ 		# mimicks behavior in hooks.py
+-- 
+1.6.4.4
+

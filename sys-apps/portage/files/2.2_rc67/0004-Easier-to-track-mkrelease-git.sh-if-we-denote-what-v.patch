@@ -1,0 +1,22 @@
+From ee62f2b889811f23eac090e713439401eefd2d2c Mon Sep 17 00:00:00 2001
+From: Jacob Godserv <jacobgodserv@gmail.com>
+Date: Sat, 20 Mar 2010 22:51:46 -0400
+Subject: [PATCH 04/52] Easier to track mkrelease-git.sh if we denote what version of mkrelease.sh we got it from
+
+---
+ mkrelease-git.sh |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/mkrelease-git.sh b/mkrelease-git.sh
+index d90a9c5..7fab1bd 100755
+--- a/mkrelease-git.sh
++++ b/mkrelease-git.sh
+@@ -1,4 +1,5 @@
+ #!/bin/bash
++# Based on git commit ba146d138848e05eac17785c876c7ca67c0e7c1d
+ 
+ RELEASE_BUILDDIR=${RELEASE_BUILDDIR:-/var/tmp/portage-release}
+ SOURCE_DIR=${RELEASE_BUILDDIR}/checkout
+-- 
+1.6.4.4
+

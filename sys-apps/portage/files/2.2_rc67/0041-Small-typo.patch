@@ -1,0 +1,25 @@
+From 02b6a752da80678bb4462075fa127d2e66487acb Mon Sep 17 00:00:00 2001
+From: Jacob Godserv <jacobgodserv@gmail.com>
+Date: Tue, 8 Jun 2010 01:19:33 -0400
+Subject: [PATCH 41/52] Small typo
+
+---
+ bin/ebuild.sh |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/bin/ebuild.sh b/bin/ebuild.sh
+index 164da83..99eb196 100755
+--- a/bin/ebuild.sh
++++ b/bin/ebuild.sh
+@@ -1765,7 +1765,7 @@ if [[ "${exit_code}" != "0" ]]; then
+ 	# mimicks behavior in hooks.py
+ 	debug-print "This hook path could not be found; ignored: ${HOOKS_PATH}/pre-ebuild.d"
+ fi
+-source "${HOOKS_BIN_PATH}" --action "${EBUILD_PHASE}" --target "${$EBUILD}"
++source "${HOOKS_BIN_PATH}" --action "${EBUILD_PHASE}" --target "${EBUILD}"
+ rm -rf "${hooks_tmpdir}"
+ exit_code="$?"
+ if [[ "${exit_code}" != "0" ]]; then
+-- 
+1.6.4.4
+

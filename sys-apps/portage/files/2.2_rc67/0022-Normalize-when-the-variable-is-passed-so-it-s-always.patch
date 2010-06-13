@@ -1,0 +1,32 @@
+From 4871dc111b3d70fb5bb92e7a55df57207336d855 Mon Sep 17 00:00:00 2001
+From: Jacob Godserv <jacobgodserv@gmail.com>
+Date: Thu, 27 May 2010 20:24:50 -0400
+Subject: [PATCH 22/52] Normalize when the variable is passed so it's always normalized
+
+---
+ pym/portage/hooks.py |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
+
+diff --git a/pym/portage/hooks.py b/pym/portage/hooks.py
+index 415041c..7db24d7 100644
+--- a/pym/portage/hooks.py
++++ b/pym/portage/hooks.py
+@@ -54,14 +54,12 @@ class HookFile (object):
+ 		self.myaction = myaction
+ 		self.mytargets = mytargets
+ 		check_config_instance(settings)
+-		self.path = path
++		self.path = normalize_path(path)
+ 		self.settings = settings
+ 	
+ 	def execute (self):
+ 		if "hooks" not in settings['FEATURES']:
+ 			return
+-
+-		path = normalize_path(self.path)
+ 		
+ 		if not os.path.exists(path):
+ 			raise InvalidLocation('This hook path could not be found: ' + path)
+-- 
+1.6.4.4
+

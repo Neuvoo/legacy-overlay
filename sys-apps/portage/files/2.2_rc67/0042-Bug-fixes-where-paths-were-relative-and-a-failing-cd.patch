@@ -1,0 +1,78 @@
+From 38d57468813c022271164d386f208358b6924233 Mon Sep 17 00:00:00 2001
+From: Jacob Godserv <jacobgodserv@gmail.com>
+Date: Tue, 8 Jun 2010 01:30:46 -0400
+Subject: [PATCH 42/52] Bug fixes, where paths were relative, and a failing cd command would spill all over the terminal
+
+---
+ bin/ebuild.sh                        |   21 ++++++++++++---------
+ pym/portage/package/ebuild/config.py |   11 ++++++-----
+ 2 files changed, 18 insertions(+), 14 deletions(-)
+
+diff --git a/bin/ebuild.sh b/bin/ebuild.sh
+index 99eb196..8913a61 100755
+--- a/bin/ebuild.sh
++++ b/bin/ebuild.sh
+@@ -1759,19 +1759,22 @@ preprocess_ebuild_env() {
+ # Process pre-ebuild hook
+ oldwd="$(pwd)"
+ hooks_tmpdir="${PORTAGE_TMPDIR}/hooks"
+-cd "${HOOKS_PATH}/pre-ebuild.d"
++hooks_dir="${PORTAGE_CONFIGROOT}/${HOOKS_PATH}/pre-ebuild.d"
++( [ ! -d "${hooks_dir}" ] && exit 1 ) || cd "${hooks_dir}"
+ exit_code="$?"
+ if [[ "${exit_code}" != "0" ]]; then
+ 	# mimicks behavior in hooks.py
+-	debug-print "This hook path could not be found; ignored: ${HOOKS_PATH}/pre-ebuild.d"
+-fi
+-source "${HOOKS_BIN_PATH}" --action "${EBUILD_PHASE}" --target "${EBUILD}"
+-rm -rf "${hooks_tmpdir}"
+-exit_code="$?"
+-if [[ "${exit_code}" != "0" ]]; then
+-	# mimicks behavior in hooks.py
+-	die "Hook directory ${HOOKS_PATH}/pre-ebuild.d failed with exit code ${exit_code}"
++	debug-print "This hook path could not be found; ignored: ${hooks_dir}"
++else
++	source "${HOOKS_SH_BINARY}" --action "${EBUILD_PHASE}" --target "${EBUILD}"
++	rm -rf "${hooks_tmpdir}"
++	exit_code="$?"
++	if [[ "${exit_code}" != "0" ]]; then
++		# mimicks behavior in hooks.py
++		die "Hook directory ${HOOKS_PATH}/pre-ebuild.d failed with exit code ${exit_code}"
++	fi
+ fi
++cd "${oldwd}" || die "Could not return to the old ebuild directory after pre-ebuild hooks: ${oldwd}"
+ 
+ # === === === === === === === === === === === === === === === === === ===
+ # === === === === === functions end, main part begins === === === === ===
+diff --git a/pym/portage/package/ebuild/config.py b/pym/portage/package/ebuild/config.py
+index 49232dd..10ca527 100644
+--- a/pym/portage/package/ebuild/config.py
++++ b/pym/portage/package/ebuild/config.py
+@@ -23,9 +23,10 @@ import portage
+ from portage import bsd_chflags, eapi_is_supported, \
+ 	load_mod, os, selinux, _encodings, _unicode_encode, _unicode_decode
+ from portage.const import CACHE_PATH, CUSTOM_PROFILE_PATH, \
+-	DEPCACHE_PATH, GLOBAL_CONFIG_PATH, INCREMENTALS, MAKE_CONF_FILE, \
+-	MODULES_FILE_PATH, PORTAGE_BIN_PATH, PORTAGE_PYM_PATH, \
+-	PRIVATE_PATH, PROFILE_PATH, USER_CONFIG_PATH, USER_VIRTUALS_FILE
++	DEPCACHE_PATH, GLOBAL_CONFIG_PATH, HOOKS_PATH, HOOKS_SH_BINARY, \
++	INCREMENTALS, MAKE_CONF_FILE, MODULES_FILE_PATH, PORTAGE_BIN_PATH, \
++	PORTAGE_PYM_PATH, PRIVATE_PATH, PROFILE_PATH, USER_CONFIG_PATH, \
++	USER_VIRTUALS_FILE
+ from portage.data import portage_gid
+ from portage.dbapi import dbapi
+ from portage.dbapi.porttree import portdbapi
+@@ -985,8 +986,8 @@ class config(object):
+ 
+ 			self["PORTAGE_BIN_PATH"] = PORTAGE_BIN_PATH
+ 			self.backup_changes("PORTAGE_BIN_PATH")
+-			self["HOOKS_BIN_PATH"] = HOOKS_BIN_PATH
+-			self.backup_changes("HOOKS_BIN_PATH")
++			self["HOOKS_SH_BINARY"] = HOOKS_SH_BINARY
++			self.backup_changes("HOOKS_SH_BINARY")
+ 			self["PORTAGE_PYM_PATH"] = PORTAGE_PYM_PATH
+ 			self.backup_changes("PORTAGE_PYM_PATH")
+ 
+-- 
+1.6.4.4
+
