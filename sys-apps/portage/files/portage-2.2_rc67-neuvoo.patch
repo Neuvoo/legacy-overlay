@@ -1,0 +1,771 @@
+diff --git a/bin/ebuild.sh b/bin/ebuild.sh
+index 60c8f5e..deb625b 100755
+--- a/bin/ebuild.sh
++++ b/bin/ebuild.sh
+@@ -661,6 +661,8 @@ _eapi4_src_install() {
+ 
+ ebuild_phase() {
+ 	declare -F "$1" >/dev/null && qa_call $1
++	# Process post-ebuild hooks for the actual phase (and not internal pre/post phase hooks)
++	[[ "$(expr match $1 '^pre_\|^post_')" == "0" ]] && source "${HOOKS_SH_BINARY}" --do-post-ebuild
+ }
+ 
+ ebuild_phase_with_hooks() {
+@@ -1756,6 +1758,9 @@ preprocess_ebuild_env() {
+ 	return ${retval}
+ }
+ 
++# Process pre-ebuild hook
++source "${HOOKS_SH_BINARY}" --do-pre-ebuild
++
+ # === === === === === === === === === === === === === === === === === ===
+ # === === === === === functions end, main part begins === === === === ===
+ # === === === === === functions end, main part begins === === === === ===
+diff --git a/bin/hooks.sh b/bin/hooks.sh
+new file mode 100755
+index 0000000..bc69311
+--- /dev/null
++++ b/bin/hooks.sh
+@@ -0,0 +1,209 @@
++#!/bin/bash
++# Copyright 1999-2010 Gentoo Foundation
++# Distributed under the terms of the GNU General Public License v2
++
++# @MAINTAINER:
++# jacobgodserv@gmail.com
++# @BLURB: Executes hooks in the current directory.
++# @DESCRIPTION:
++# Part of the portage hooks system, this script is responsible for executing
++# hooks within a prepared environment, as well as acting as an API interface
++# between hooks and portage.
++
++# Only run hooks if it's requested in $FEATURES
++if ! (source "${PORTAGE_BIN_PATH}/isolated-functions.sh" && hasq hooks $FEATURES) ; then
++	return
++fi
++
++# TODO: unit testing does not cover this portion of hooks.sh
++# This code is put here so it's easier to do one-liners elsewhere.
++# This section is meant to be run by ebuild.sh
++if [[ "$1" == "--do-pre-ebuild" || "$1" == "--do-post-ebuild" ]]; then
++	if [[ "${EBUILD_PHASE}" == "" ]]; then
++		# an in-between-phases moment; useless to hooks
++		return
++	fi
++	
++
++	oldwd="$(pwd)"
++	if [[ "$1" == "--do-pre-ebuild" ]]; then
++		hooks_dir="${PORTAGE_CONFIGROOT}/${HOOKS_PATH}/pre-ebuild.d"
++	else
++		hooks_dir="${PORTAGE_CONFIGROOT}/${HOOKS_PATH}/post-ebuild.d"
++	fi
++	
++	[ -d "${hooks_dir}" ] && cd "${hooks_dir}"
++	exit_code="$?"
++	if [[ "${exit_code}" != "0" ]]; then
++		# mimicks behavior in hooks.py
++		# TODO: --verbose detection?
++		:
++		#debug-print "This hook path could not be found; ignored: ${hooks_dir}"
++	else
++		# Create the temporary directory if needed
++		if [ ! -d "${HOOKS_TMPDIR}" ]; then
++			mkdir "${HOOKS_TMPDIR}" || die "Could not create temporary hooks output directory: ${HOOKS_TMPDIR}"
++		fi
++		
++		# Execute the hooks
++		source "${HOOKS_SH_BINARY}" --action "${EBUILD_PHASE}" --target "${EBUILD}"
++		exit_code="$?"
++		if [[ "${exit_code}" != "0" ]]; then
++			# mimicks behavior in hooks.py
++			die "Hook directory ${HOOKS_PATH}/pre-ebuild.d failed with exit code ${exit_code}"
++		fi
++	fi
++	cd "${oldwd}" || die "Could not return to the old ebuild directory after pre-ebuild hooks: ${oldwd}"
++	
++	return
++fi
++
++# Local variables listed here.
++# Using the local keyword makes no difference since this script is being sourced
++# so we'll have to unset them manually later. Be sure to keep the local_vars
++# array up-to-date.
++hook_files=( * )
++hook_args=( "$@" )
++hook_verbosity="0"
++HOOKS_TMPDIR_settings="${HOOKS_TMPDIR}/settings/"
++HOOKS_TMPDIR_envonly="${HOOKS_TMPDIR}/envonly/"
++
++hook_local_vars=( "hook_files" "hook_args" "hook_verbosity" ) # variables unset for hooks
++quit_local_vars=( "HOOKS_TMPDIR_settings" "HOOKS_TMPDIR_envonly" "${hook_local_vars[@]}" ) # variables unset at quit
++
++# Create the directories we'll be using, if they don't already exist.
++# Settings directory can exist, since it's global anyway
++if [ ! -d "${HOOKS_TMPDIR_settings}" ]; then
++	mkdir "${HOOKS_TMPDIR_settings}" || exit $?
++fi
++# Envonly directory cannot exist, since these vars are local only
++[ -d "${HOOKS_TMPDIR_envonly}" ] && rm -rf "${HOOKS_TMPDIR_envonly}"
++mkdir "${HOOKS_TMPDIR_envonly}" || exit $?
++
++# @FUNCTION: hooks_savesetting
++# @DESCRIPTION:
++# This function saves a variable in the environment into portage's internal
++# settings variable, which is not only used by portage but also used as the
++# environment for ebuilds. The changes made here are effective until portage
++# quits, which means all ebuilds from here on will read them.
++#
++# Be careful: portage resets the internal settings variable at each ebuild phase
++# and only allows whitelisted variables to persist beyond ebuild phases. Do not
++# use this to store hook-specific settings!
++# 
++# Takes one argument, which is the variable name to save. Arrays are allowed but
++# discouraged, since portage will read them as serialized strings only.
++function hooks_savesetting () {
++	hooks_savevarto "$1" "${HOOKS_TMPDIR_settings}" || return $?
++}
++
++# @FUNCTION: hooks_saveenvonly
++# @DESCRIPTION:
++# Like hooks_savesetting, except that the variable will only be saved so that
++# future hooks and, if it is an ebuild hook, the current ebuild phase will see
++# it. In other words, the big difference is this change isn't saved in portage's
++# internal settings variable while portage is running.
++# 
++# Takes one argument, which is the variable name to save. Arrays are allowed.
++function hooks_saveenvonly () {
++	hooks_savevarto "$1" "${HOOKS_TMPDIR_envonly}" || return $?
++}
++
++# @FUNCTION: hooks_savevarto
++# @DESCRIPTION:
++# Hook developers are highly discouraged from calling directly.
++#
++# Used by hook APIs to serialize a variable to a file inside the specified
++# directory.
++# 
++# Takes two arguments:
++# * First is the variable name to save. Arrays are allowed, but if portage is to
++#   read this variable back, it will be read as a string.
++# * Second is the directory, which must exist. The variable name, after
++#   processed by basename, will be used as the file name.
++function hooks_savevarto () {
++	local unsecure_varname="$1"
++	local directory="$2"
++	local varname="$(basename ${unsecure_varname})"
++	
++	if [[ "${unsecure_varname}" != "${varname}" ]]; then
++		eerror "Illegal hooks variable name: ${unsecure_varname}"
++		return 1
++	fi
++	
++	if [ ! -d "${directory}" ]; then
++		eerror "${directory} is not a directory"
++		return 1
++	fi
++	
++	# removes the beginning junk we don't want, up to the equals sign
++	declare -p "${varname}" | sed '1s|^[^=]*=||' > "${directory}/${varname}" || return $?
++}
++
++# @FUNCTION: hooks_killportage
++# @DESCRIPTION:
++# This is a convenience function, which allows a hook to stop portage
++# immediately. This will cause portage to exit without whining too much.
++# Portage will still exit with an error code, breaking wrapper scripts like
++# eix-sync.
++# 
++# Takes one optional argument, which is the kill signal, passed to kill via the
++# -s argument. Otherwise, uses kill's default signal.
++
++# TODO: unable to test with unit tests, since it forces even the testing module
++# to quit
++function hooks_killportage () {
++	local signal="$1"
++	
++	local args=( )
++	if [[ "${signal}" != "" ]]; then
++		args+=( -s "${signal}" )
++	fi
++	args+=( "${PPID}" )
++	
++	kill "${args[@]}"
++}
++
++for (( i = 0 ; i < ${#hook_args[@]} ; i++ )); do
++	if [[ "${hook_args[$i]}" == "--verbose" ]]; then
++		hook_verbosity="1"
++	fi
++done
++
++for (( i = 0 ; i < ${#hook_files[@]} ; i++ )); do
++	hook="${hook_files[$i]}"
++	if [[ ! -f "${hook}" ]]; then
++		[ "${hook_verbosity}" -gt 0 ] && ewarn "Only files are recognized in a hook directory: ${hook}"
++		continue
++	fi
++	
++	[ "${hook_verbosity}" -gt 0 ] && einfo "Executing hook ${hook}..."
++	# We use eval so the hook_args gets expanded before it is unset
++	( eval unset "${hook_local_vars[@]}" '&&' source "${hook}" "${hook_args[@]}" )
++	
++	exit_code="$?"
++	if [[ "${exit_code}" != "0" ]]; then
++		eerror "Hook $(pwd)/${hook} returned with exit code ${exit_code}"
++		exit "${exit_code}"
++	fi
++	
++	# We need to re-export variables that hooks saved. The goal is to let the
++	# specifically-saved variables escape the hook "( ... )" subshell and carry
++	# over into the next hook or an ebuild env.
++	var_files=( "${HOOKS_TMPDIR_envonly}"/* "${HOOKS_TMPDIR_settings}"/* )
++	for (( varI = 0 ; varI < ${#var_files[@]} ; varI++ )); do
++		varname="$(basename ${var_files[$varI]})"
++		# if there are no files, the variable points to a non-existant file, which we want to catch here
++		if [ ! -f "${var_files[$varI]}" ]; then
++			continue;
++		fi
++		# if the variable is not read-only
++		if $(unset "${varname}" 2> /dev/null) ; then
++			eval declare -x "$(basename ${var_files[$varI]})"="$(cat ${var_files[$varI]})" || exit $?
++		else
++			ewarn "A hook tried to modify a read-only variable: ${varname}"
++		fi
++	done
++done
++
++unset "${quit_local_vars[@]}"
+diff --git a/doc/config.docbook b/doc/config.docbook
+index 88009df..c2bd0ed 100644
+--- a/doc/config.docbook
++++ b/doc/config.docbook
+@@ -2,4 +2,5 @@
+ <title>Configuration</title>
+ &config_bashrc;
+ &config_set;
++&config_hooks;
+ </part>
+diff --git a/doc/config/hooks.docbook b/doc/config/hooks.docbook
+new file mode 100644
+index 0000000..5fc6000
+--- /dev/null
++++ b/doc/config/hooks.docbook
+@@ -0,0 +1,113 @@
++<chapter id='config-hooks'>
++	<title id="config-hooks.title">Hooks Configuration</title>
++	
++	<sect1 id='config-hooks-execution'>
++		<title id="config-hooks-execution.title">Hooks Execution</title>
++		
++		<para>Hooks are only executed if <quote>hooks</quote> is set in
++		FEATURES.</para>
++		
++		<para>
++		If a hook directory exists, the bash scripts within each one
++		wil either be executed before or after that particular phase, in
++		alphabetical order. Each one will receive the environment of an
++		ebuild, so they are capable of inherit, einfo, and other common
++		commands (if you find them useful). For non-ebuild hooks, avoid
++		commands that may trigger changes in the filesystem!
++		</para>
++		
++		<para>
++		Ebuild hooks are executed within ebuild.sh, so they receive the
++		same sandbox limitations as ebuilds.
++		</para>
++		
++		<para>
++		A hook script is expected to understand the following usage:
++		<cmdsynopsis>
++			<command>/bin/bash <replaceable>...</replaceable></command><sbr/>
++
++			<arg>--opt <replaceable>portage arguments, always translated to long form, given by user at the prompt, such as "--verbose" or "--newuse"</replaceable></arg><sbr/>
++
++			<arg>--action <replaceable>a single action being performed by portage, such as "depclean", "sync", or an ebuild phase</replaceable></arg><sbr/>
++
++			<arg>--target <replaceable>the thing to perform the action with or on</replaceable></arg>
++		</cmdsynopsis>
++		</para>
++		
++		<para>
++		If a hook needs a temporary directory, create one inside of
++		the directory indicated by the HOOKS_TMPDIR bash variable.
++		</para>
++		
++		<para>
++		Some hook types have slightly different usage. See <quote>
++		<link linkend='config-hooks-locations' endterm="config-hooks-locations.title"/></quote> for more
++		information.
++		</para>
++		
++	</sect1>
++	
++	<sect1 id='config-hooks-locations'>
++		<title id="config-hooks-locations.title">Hooks Locations</title>		
++		<para>
++		The following hook directories are supported. Each directory
++		corresponds to a specific type, such as <quote>ebuild</quote> or
++		<quote>run</quote>. The standard hook script usage applies given
++		in <link linkend='config-hooks-execution' endterm="config-hooks-execution.title"/>,
++		except wherever	described differently below.
++		</para>
++		
++		<itemizedlist>
++			<listitem><para><filename>/etc/portage/hooks/pre-ebuild.d/</filename> - executed before every ebuild phase execution, within ebuild.sh itself. Never receives --opt, and --target is set to the full path of the ebuild.</para></listitem>
++			<listitem><para><filename>/etc/portage/hooks/post-ebuild.d/</filename> - executed after every ebuild phase execution. Never receives --opt, and --target is set to the full path of the ebuild.</para></listitem>
++			<listitem><para><filename>/etc/portage/hooks/pre-run.d/</filename> - executed before portage considers most things, including proper permissions and validity of parsed arguments.</para></listitem>
++			<listitem><para><filename>/etc/portage/hooks/post-run.d/</filename> - executed after portage is done. It should run regardless of any errors or signals sent, but this cannot be guaranteed for certain scenarios (such as when the KILL signal is received). No information is available concerning the reason portage is exiting. This is a limitation of python itself.</para></listitem>
++			<listitem><para><filename>/etc/portage/hooks/pre-sync.d/</filename> - executed before portage synchronizes the portage tree.</para></listitem>
++			<listitem><para><filename>/etc/portage/hooks/post-sync.d/</filename> - executed after portage has <emphasis>successfully</emphasis> synchronized the portage tree. If you want to catch a sync failure, use post-run.</para></listitem>
++		</itemizedlist>
++	</sect1>
++	
++	<sect1 id='config-hooks-skeleton-hook'>
++		<title id="config-hooks-skeleton-hook.title">Skeleton Hook</title>
++		<para>
++		Most hooks will parse the options at the beginning and look for
++		specific things. This skeleton hook provides that functionality
++		to get you started.
++		</para>
++		<para>
++		It's highly recommended that --verbose, --debug, and --quiet be
++		utilized for suppressing or adding to <quote>regular</quote>
++		output. The following skeleton hook already has example code in
++		place to handle these flags.
++		</para>
++		<programlisting>
++		#!/bin/bash
++
++		verbose_redirect="/dev/null"
++		debug_redirect="/dev/null"
++		while [[ "$1" != "" ]]; do
++			if [[ "$1" == "--opt" ]]; then
++				if [[ "$2" == "--verbose" ]]; then
++					verbose_redirect="/dev/tty"
++				fi
++				if [[ "$2" == "--debug" ]]; then
++					debug_redirect="/dev/tty"
++				fi
++				if [[ "$2" == "--quiet" ]]; then
++					verbose_redirect="/dev/null"
++					debug_redirect="/dev/null"
++				fi
++			elif [[ "$1" == "--action" ]]; then
++				: # do nothing
++			elif [[ "$1" == "--target" ]]; then
++				: # do nothing
++			else
++				ewarn "Unknown hook option: $1 $2" &amp;> "${verbose_redirect}"
++			fi
++			shift 2
++		done
++		einfo "This is an example hook." &amp;> "${verbose_redirect}"
++		einfo "This is debug output." &amp;> "${debug_redirect}"
++		</programlisting>
++	</sect1>
++</chapter>
+diff --git a/doc/portage.docbook b/doc/portage.docbook
+index 999103a..c754352 100644
+--- a/doc/portage.docbook
++++ b/doc/portage.docbook
+@@ -23,6 +23,7 @@
+ 	<!ENTITY config SYSTEM "config.docbook">
+ 	<!ENTITY config_bashrc SYSTEM "config/bashrc.docbook">
+ 	<!ENTITY config_set SYSTEM "config/sets.docbook">
++	<!ENTITY config_hooks SYSTEM "config/hooks.docbook">
+ ]>
+ 
+ <book id="portage" lang="en">
+diff --git a/man/portage.5 b/man/portage.5
+index 40bf89f..180c7d3 100644
+--- a/man/portage.5
++++ b/man/portage.5
+@@ -59,6 +59,12 @@ package.use
+ repos.conf
+ .fi
+ .TP
++.BR /etc/portage/env/
++package-specific bashrc files
++.TP
++.BR /etc/portage/hooks/
++portage pre/post hooks
++.TP
+ .BR /etc/portage/profile/
+ site-specific overrides of \fB/etc/make.profile/\fR
+ .TP
+@@ -616,6 +622,30 @@ masters = gentoo kde
+ .fi
+ .RE
+ .TP
++.BR /etc/portage/env/
++.RS
++In this directory additional package-specific bashrc files can be created.
++Portage will source all of them after \fB/etc/portage/bashrc\fR in the following
++order:
++.nr step 1 1
++.IP \n[step]. 3
++/etc/portage/env/${CATEGORY}/${PN}
++.IP \n+[step].
++/etc/portage/env/${CATEGORY}/${PN}:${SLOT}
++.IP \n+[step].
++/etc/portage/env/${CATEGORY}/${P}
++.IP \n+[step].
++/etc/portage/env/${CATEGORY}/${PF}
++.RE
++.TP
++.BR /etc/portage/hooks/
++.RS
++In this directory, portage hooks are executed before each ebuild phase,
++before and after synchronization, and before and after portage runs
++themselves. Please see the DocBook documentation for detailed
++information.
++.RE
++.TP
+ .BR /usr/portage/metadata/
+ .RS
+ .TP
+diff --git a/pym/_emerge/actions.py b/pym/_emerge/actions.py
+index bf26881..9f45076 100644
+--- a/pym/_emerge/actions.py
++++ b/pym/_emerge/actions.py
+@@ -32,6 +32,7 @@ from portage.output import blue, bold, colorize, create_color_func, darkgreen, \
+ 	red, yellow
+ good = create_color_func("GOOD")
+ bad = create_color_func("BAD")
++from portage.hooks import HookDirectory
+ from portage.sets import load_default_config, SETPREFIX
+ from portage.sets.base import InternalPackageSet
+ from portage.util import cmp_sort_key, writemsg, writemsg_level
+@@ -1746,6 +1747,7 @@ def action_sync(settings, trees, mtimedb, myopts, myaction):
+ 	os.umask(0o022)
+ 	dosyncuri = syncuri
+ 	updatecache_flg = False
++	HookDirectory(phase='pre-sync', settings=settings, myopts=myopts, myaction=myaction).execute()
+ 	if myaction == "metadata":
+ 		print("skipping sync")
+ 		updatecache_flg = True
+@@ -2189,6 +2191,8 @@ def action_sync(settings, trees, mtimedb, myopts, myaction):
+ 			if retval != os.EX_OK:
+ 				print(red(" * ") + bold("spawn failed of " + postsync))
+ 
++	HookDirectory(phase='post-sync', settings=settings, myopts=myopts, myaction=myaction).execute()
++
+ 	if(mybestpv != mypvs) and not "--quiet" in myopts:
+ 		print()
+ 		print(red(" * ")+bold("An update to portage is available.")+" It is _highly_ recommended")
+diff --git a/pym/_emerge/main.py b/pym/_emerge/main.py
+index e725da8..1f72a57 100644
+--- a/pym/_emerge/main.py
++++ b/pym/_emerge/main.py
+@@ -28,6 +28,8 @@ bad = create_color_func("BAD")
+ import portage.elog
+ import portage.dep
+ portage.dep._dep_check_strict = True
++import portage.hooks
++import portage.process
+ import portage.util
+ import portage.locks
+ import portage.exception
+@@ -1180,7 +1182,16 @@ def emerge_main():
+ 	# Portage needs to ensure a sane umask for the files it creates.
+ 	os.umask(0o22)
+ 	settings, trees, mtimedb = load_emerge_config()
++
++	# Portage configured; let's let hooks run before we do anything more
++	portage.hooks.HookDirectory(phase='pre-run', settings=settings, myopts=myopts, myaction=myaction, mytargets=myfiles).execute()
++
++	settings, trees, mtimedb = load_emerge_config() # once more, since pre-run might've done something
+ 	portdb = trees[settings["ROOT"]]["porttree"].dbapi
++
++	# Have post-run hooks executed whenever portage quits
++	portage.process.atexit_register(portage.hooks.HookDirectory(phase='post-run', settings=settings, myopts=myopts, myaction=myaction, mytargets=myfiles).execute)
++
+ 	rval = profile_check(trees, myaction)
+ 	if rval != os.EX_OK:
+ 		return rval
+diff --git a/pym/portage/const.py b/pym/portage/const.py
+index 95ea76c..dbe2a00 100644
+--- a/pym/portage/const.py
++++ b/pym/portage/const.py
+@@ -35,6 +35,7 @@ MODULES_FILE_PATH        = USER_CONFIG_PATH + "/modules"
+ CUSTOM_PROFILE_PATH      = USER_CONFIG_PATH + "/profile"
+ USER_VIRTUALS_FILE       = USER_CONFIG_PATH + "/virtuals"
+ EBUILD_SH_ENV_FILE       = USER_CONFIG_PATH + "/bashrc"
++HOOKS_PATH               = USER_CONFIG_PATH + "/hooks"
+ CUSTOM_MIRRORS_FILE      = USER_CONFIG_PATH + "/mirrors"
+ COLOR_MAP_FILE           = USER_CONFIG_PATH + "/color.map"
+ PROFILE_PATH             = "etc/make.profile"
+@@ -60,6 +61,7 @@ PORTAGE_PYM_PATH         = PORTAGE_BASE_PATH + "/pym"
+ LOCALE_DATA_PATH         = PORTAGE_BASE_PATH + "/locale"  # FIXME: not used
+ EBUILD_SH_BINARY         = PORTAGE_BIN_PATH + "/ebuild.sh"
+ MISC_SH_BINARY           = PORTAGE_BIN_PATH + "/misc-functions.sh"
++HOOKS_SH_BINARY          = PORTAGE_BIN_PATH + "/hooks.sh"
+ SANDBOX_BINARY           = "/usr/bin/sandbox"
+ FAKEROOT_BINARY          = "/usr/bin/fakeroot"
+ BASH_BINARY              = "/bin/bash"
+diff --git a/pym/portage/hooks.py b/pym/portage/hooks.py
+new file mode 100644
+index 0000000..ceaf5ef
+--- /dev/null
++++ b/pym/portage/hooks.py
+@@ -0,0 +1,86 @@
++# Copyright 1998-2010 Gentoo Foundation
++# Distributed under the terms of the GNU General Public License v2
++# $Id$
++
++from portage.const import BASH_BINARY, HOOKS_PATH, HOOKS_SH_BINARY, PORTAGE_BIN_PATH
++from portage import os
++from portage import check_config_instance
++from portage import normalize_path
++from portage.exception import PortageException
++from portage.exception import InvalidLocation
++from portage.output import EOutput
++from process import spawn
++from shutil import rmtree
++from tempfile import mkdtemp
++
++class HookDirectory(object):
++
++	def __init__ (self, phase, settings, myopts=None, myaction=None, mytargets=None):
++		self.myopts = myopts
++		self.myaction = myaction
++		self.mytargets = mytargets
++		check_config_instance(settings)
++		self.settings = settings
++		self.path = os.path.join(settings["PORTAGE_CONFIGROOT"], HOOKS_PATH, phase + '.d')
++		self.output = EOutput()
++
++	def execute (self, path=None):
++		if "hooks" not in self.settings['FEATURES']:
++			return
++		
++		if not path:
++			path = self.path
++		
++		path = normalize_path(path)
++		
++		if not os.path.exists(path):
++			if self.myopts and "--debug" in self.myopts:
++				# behavior mimicked by hook.sh
++				self.output.ewarn('This hook path could not be found; ignored: ' + path)
++			return
++		
++		if os.path.isdir(path):
++			command=[HOOKS_SH_BINARY]
++			if self.myopts:
++				for myopt in self.myopts:
++					command.extend(['--opt', myopt])
++			if self.myaction:
++				command.extend(['--action', self.myaction])
++			if self.mytargets:
++				for mytarget in self.mytargets:
++					command.extend(['--target', mytarget])
++			
++			tmpdir = mkdtemp()
++			try:
++				command=[BASH_BINARY, '-c', 'cd "'+path+'" && source "' + PORTAGE_BIN_PATH + '/isolated-functions.sh" && declare -x HOOKS_TMPDIR="'+tmpdir+'" && source ' + ' '.join(command)]
++				if self.myopts and "--verbose" in self.myopts:
++					self.output.einfo('Executing hooks directory "' + self.path + '"...')
++				code = spawn(mycommand=command, env=self.settings.environ())
++				if code: # if failure
++					# behavior mimicked by hook.sh
++					raise PortageException('!!! Hook directory %s failed with exit code %s' % (self.path, code))
++					
++				if os.path.exists(tmpdir+'/settings/'):
++					self.settings = self.merge_to_env (self.settings, tmpdir+'/settings/')
++				
++			finally:
++				rmtree(tmpdir)
++		
++		else:
++			raise InvalidLocation('This hook path ought to be a directory: ' + path)
++	
++	def merge_to_env (self, existingenv, path):
++		path = normalize_path(path)
++
++		if not os.path.isdir(path):
++			raise InvalidLocation('This environment path is not a directory: ' + path)
++		
++		for parent, dirs, files in os.walk(path):
++			for varname in files:
++				file = open(os.path.join(path, varname), 'r')
++				# read the file, remove the very last newline, and make the escaped double-quotes just plain double-quotes (since only bash needs them to be escaped, not python)
++				vardata = file.read()[:-1].replace('\"','"').strip('"')
++				existingenv[varname] = vardata
++				existingenv.backup_changes(varname)
++		
++		return existingenv
+diff --git a/pym/portage/package/ebuild/config.py b/pym/portage/package/ebuild/config.py
+index 908b6b6..df351b0 100644
+--- a/pym/portage/package/ebuild/config.py
++++ b/pym/portage/package/ebuild/config.py
+@@ -23,9 +23,10 @@ import portage
+ from portage import bsd_chflags, eapi_is_supported, \
+ 	load_mod, os, selinux, _encodings, _unicode_encode, _unicode_decode
+ from portage.const import CACHE_PATH, CUSTOM_PROFILE_PATH, \
+-	DEPCACHE_PATH, GLOBAL_CONFIG_PATH, INCREMENTALS, MAKE_CONF_FILE, \
+-	MODULES_FILE_PATH, PORTAGE_BIN_PATH, PORTAGE_PYM_PATH, \
+-	PRIVATE_PATH, PROFILE_PATH, USER_CONFIG_PATH, USER_VIRTUALS_FILE
++	DEPCACHE_PATH, GLOBAL_CONFIG_PATH, HOOKS_PATH, HOOKS_SH_BINARY, \
++	INCREMENTALS, MAKE_CONF_FILE, MODULES_FILE_PATH, PORTAGE_BIN_PATH, \
++	PORTAGE_PYM_PATH, PRIVATE_PATH, PROFILE_PATH, USER_CONFIG_PATH, \
++	USER_VIRTUALS_FILE
+ from portage.data import portage_gid
+ from portage.dbapi import dbapi
+ from portage.dbapi.porttree import portdbapi
+@@ -170,6 +171,7 @@ class config(object):
+ 		"EBUILD_PHASE", "ECLASSDIR", "ECLASS_DEPTH", "ED",
+ 		"EMERGE_FROM", "EPREFIX", "EROOT",
+ 		"FEATURES", "FILESDIR", "HOME", "NOCOLOR", "PATH",
++		"HOOKS_PATH", "HOOKS_SH_BINARY", "HOOKS_TMPDIR",
+ 		"PKGDIR",
+ 		"PKGUSE", "PKG_LOGDIR", "PKG_TMPDIR",
+ 		"PORTAGE_ACTUAL_DISTDIR", "PORTAGE_ARCHLIST",
+@@ -758,6 +760,8 @@ class config(object):
+ 
+ 			self["PORTAGE_CONFIGROOT"] = config_root
+ 			self.backup_changes("PORTAGE_CONFIGROOT")
++			self["HOOKS_PATH"] = HOOKS_PATH
++			self.backup_changes("HOOKS_PATH")
+ 			self["ROOT"] = target_root
+ 			self.backup_changes("ROOT")
+ 
+@@ -982,6 +986,8 @@ class config(object):
+ 
+ 			self["PORTAGE_BIN_PATH"] = PORTAGE_BIN_PATH
+ 			self.backup_changes("PORTAGE_BIN_PATH")
++			self["HOOKS_SH_BINARY"] = HOOKS_SH_BINARY
++			self.backup_changes("HOOKS_SH_BINARY")
+ 			self["PORTAGE_PYM_PATH"] = PORTAGE_PYM_PATH
+ 			self.backup_changes("PORTAGE_PYM_PATH")
+ 
+diff --git a/pym/portage/package/ebuild/doebuild.py b/pym/portage/package/ebuild/doebuild.py
+index 4ca74e5..596a1fe 100644
+--- a/pym/portage/package/ebuild/doebuild.py
++++ b/pym/portage/package/ebuild/doebuild.py
+@@ -22,6 +22,7 @@ import time
+ 
+ import portage
+ portage.proxy.lazyimport.lazyimport(globals(),
++	'portage.package.ebuild.const:HOOKS_SH_BINARY',
+ 	'portage.package.ebuild.config:check_config_instance',
+ 	'portage.package.ebuild.digestcheck:digestcheck',
+ 	'portage.package.ebuild.digestgen:digestgen',
+@@ -45,6 +46,7 @@ from portage.elog.messages import eerror, eqawarn
+ from portage.exception import DigestException, FileNotFound, \
+ 	IncorrectParameter, InvalidAtom, InvalidDependString, PermissionDenied, \
+ 	UnsupportedAPIException
++from portage.hooks import HookDirectory
+ from portage.localization import _
+ from portage.manifest import Manifest
+ from portage.output import style_to_ansi_code
+@@ -141,6 +143,8 @@ def doebuild_environment(myebuild, mydo, myroot, mysettings,
+ 	mysettings["PN"] = mysplit[0]
+ 	mysettings["PV"] = mysplit[1]
+ 	mysettings["PR"] = mysplit[2]
++	
++	mysettings["HOOKS_TMPDIR"] = mysettings["PORTAGE_TMPDIR"]+"/hooks-"+mysettings["P"]
+ 
+ 	if noiselimit < 0:
+ 		mysettings["PORTAGE_QUIET"] = "1"
+@@ -1033,7 +1037,13 @@ def doebuild(myebuild, mydo, myroot, mysettings, debug=0, listonly=0,
+ 			# If necessary, depend phase has been triggered by aux_get calls
+ 			# and the exemption is no longer needed.
+ 			portage._doebuild_manifest_exempt_depend -= 1
+-
++		
++		# If hooks executed this time around, handle global settings changes
++		if (os.path.exists(mysettings["HOOKS_TMPDIR"]+"/settings/")):
++			hookDirectory = HookDirectory('post-ebuild', mysettings)
++			mysettings = hookDirectory.merge_to_env(mysettings, mysettings["HOOKS_TMPDIR"]+"/settings/")
++			shutil.rmtree(mysettings["HOOKS_TMPDIR"])
++		
+ def _validate_deps(mysettings, myroot, mydo, mydbapi):
+ 
+ 	invalid_dep_exempt_phases = \
+diff --git a/pym/portage/tests/hooks/__init__.py b/pym/portage/tests/hooks/__init__.py
+new file mode 100644
+index 0000000..95dfcfc
+--- /dev/null
++++ b/pym/portage/tests/hooks/__init__.py
+@@ -0,0 +1,5 @@
++# tests/portage/hooks/__init__.py -- Portage Unit Test functionality
++# Copyright 2010 Gentoo Foundation
++# Distributed under the terms of the GNU General Public License v2
++# $Id$
++
+diff --git a/pym/portage/tests/hooks/__test__ b/pym/portage/tests/hooks/__test__
+new file mode 100644
+index 0000000..e69de29
+diff --git a/pym/portage/tests/hooks/test_HookDirectory.py b/pym/portage/tests/hooks/test_HookDirectory.py
+new file mode 100644
+index 0000000..5e1cebc
+--- /dev/null
++++ b/pym/portage/tests/hooks/test_HookDirectory.py
+@@ -0,0 +1,65 @@
++# test_HookDirectory.py -- Portage Unit Testing Functionality
++# Copyright 2010 Gentoo Foundation
++# Distributed under the terms of the GNU General Public License v2
++# $Id$
++
++from portage import os
++from portage.hooks import HookDirectory
++from portage.package.ebuild.config import config
++from portage.tests import TestCase
++from tempfile import mkdtemp
++from shutil import rmtree
++
++# http://stackoverflow.com/questions/845058/how-to-get-line-count-cheaply-in-python
++def file_len(fname):
++    with open(fname) as f:
++        for i, l in enumerate(f):
++            pass
++    return i + 1
++
++class HookDirectoryTestCase(TestCase):
++	
++	def testHookDirectory(self):
++		"""
++		Tests to be sure a hook loads and reads the right settings
++		Based on test_PackageKeywordsFile.py
++		"""
++
++		self.tmp_dir_path = self.BuildTmp('/etc/portage/hooks/test.d')
++		try:
++			settings = config()
++			settings["PORTAGE_CONFIGROOT"] = self.tmp_dir_path
++			settings["FEATURES"] += " hooks"
++			hooks = HookDirectory(phase='test', settings=settings)
++			hooks.execute()
++			self.assert_(settings["test"] == "this is another test")
++			self.assert_(settings["test2"] == "this is a second test")
++			self.assert_(settings["hookonlytest"] == "")
++			self.assert_(file_len(self.tmp_dir_path+'/output') == 2)
++		finally:
++			rmtree(self.tmp_dir_path)
++	
++	def BuildTmp(self, tmp_subdir):
++		tmp_dir = mkdtemp()
++		hooks_dir = tmp_dir + '/' + tmp_subdir
++		os.makedirs(hooks_dir)
++		
++		f = open(hooks_dir+'/1-testhook', 'w')
++		f.write('#!/bin/bash\n')
++		f.write('test="this is a test"\n')
++		f.write('hookonlytest="portage cannot see me!"\n')
++		f.write('echo hi >> '+tmp_dir+'/output && hooks_savesetting test && hooks_saveenvonly hookonlytest\n')
++		f.write('exit $?\n')
++		f.close()
++		
++		f = open(hooks_dir+'/2-testhook', 'w')
++		f.write('#!/bin/bash\n')
++		f.write('if [[ "${test}" != "this is a test" ]]; then echo "Unexpected test value: ${test}"; exit 3; fi\n');
++		f.write('if [[ "${hookonlytest}" != "portage cannot see me!" ]]; then echo "Unexpected hookonlytest value: ${hookonlytest}"; exit 3; fi\n');
++		f.write('test="this is another test"\n')
++		f.write('test2="this is a second test"\n')
++		f.write('echo hey >> '+tmp_dir+'/output && hooks_savesetting test && hooks_savesetting test2\n')
++		f.write('exit $?\n')
++		f.close()
++		
++		return tmp_dir
