@@ -37,10 +37,9 @@ src_install() {
 	elog 'Before portage will sync the following must be done:'
 	elog ' *) Review /etc/conf.d/squashfs-portage and create the SQUASHFS_BASEDIR'
 	elog '    and SQUASHFS_MOUNT files, like so:'
-	elog '    # mkdir -p $SQUASHFS_BASEDIR}'
+	elog '    # mkdir -p ${SQUASHFS_BASEDIR}'
 	elog '    # mkdir -p ${SQUASHFS_MOUNT}'
-	elog ' *) Add "hooks" to FEATURES in /etc/make.conf, like so:'
-	elog '    # echo '"'"'FEATURES="hooks"'"'"' >> /etc/make.conf'
+	elog ' *) Add FEATURES="hooks" to /etc/make.conf.'
 	elog ' *) Verify at least squashfs support is enabled in the kernel. If you do'
 	elog '    not have aufs as well, change SQUASHFS_MOUNT to '"'"'/usr/portage'"'"' and'
 	elog '    in /etc/make.conf configure PKGDIR and DISTDIR to point somewhere'
@@ -52,7 +51,8 @@ src_install() {
 	elog '    # for type in SQUASHFS; do'
 	elog '    In the future, aufs will be easier to disable.'
 	elog
-	elog 'Run emerge --sync to get a squashfs image properly mounted and ready.'
+	elog 'Once this is done, run emerge --sync to get a squashfs image properly mounted'
+	elog 'and ready.'
 	elog
 	ewarn 'Any other portage command may fail until this is done.'
 }
