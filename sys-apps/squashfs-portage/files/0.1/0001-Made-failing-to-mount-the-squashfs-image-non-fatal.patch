@@ -1,0 +1,26 @@
+From 6f961744096718411fa6fc89157f5f651eb53d79 Mon Sep 17 00:00:00 2001
+From: Jacob Godserv <jacobgodserv@gmail.com>
+Date: Mon, 14 Jun 2010 08:07:21 -0400
+Subject: [PATCH] Made failing to mount the squashfs image non-fatal
+
+---
+ squashfs-portage/pre-run.d/20-squashfs |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/squashfs-portage/pre-run.d/20-squashfs b/squashfs-portage/pre-run.d/20-squashfs
+index a96b186..c3c3dd6 100755
+--- a/squashfs-portage/pre-run.d/20-squashfs
++++ b/squashfs-portage/pre-run.d/20-squashfs
+@@ -21,7 +21,6 @@ done
+ "${ROOT}"/usr/lib/squashfs-portage/bin/squashfs-portage-mount --mount > "${verbose_redirect}" 2>&1
+ exit_code="$?"
+ if [[ "$exit_code" != "0" ]]; then
+-	eerror "The squashfs portage tree could not be mounted."
+-	eerror "If the portage-latest file is reported to be missing, try running emerge --sync."
+-	exit "${exit_code}"
++	ewarn "The squashfs portage tree could not be mounted."
++	ewarn "If the portage-latest file is reported to be missing, try running emerge --sync."
+ fi
+-- 
+1.6.4.4
+
