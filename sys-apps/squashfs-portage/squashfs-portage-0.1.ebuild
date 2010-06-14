@@ -10,7 +10,7 @@ inherit eutils
 DESCRIPTION="Modifies portage to use a neuvoo.org squashfs image for the portage tree"
 HOMEPAGE="http://neuvoo.org/"
 LICENSE="BSD"
-KEYWORDS=""
+KEYWORDS="~arm"
 SLOT="0"
 
 RDEPEND="
