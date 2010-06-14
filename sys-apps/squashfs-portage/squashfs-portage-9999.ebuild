@@ -43,7 +43,7 @@ src_install() {
 	elog ' *) Verify at least squashfs support is enabled in the kernel. If you do'
 	elog '    not have aufs as well, change SQUASHFS_MOUNT to '"'"'/usr/portage'"'"' and'
 	elog '    in /etc/make.conf configure PKGDIR and DISTDIR to point somewhere'
-	elog '    besides a folder in /usr/portage. In the future, aufs will be	easier to'
+	elog '    besides a folder in /usr/portage. In the future, aufs will be easier to'
 	elog '    disable.'
 	elog
 	elog 'Once this is done, run emerge --sync to get a squashfs image properly mounted'
