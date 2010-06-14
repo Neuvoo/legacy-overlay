@@ -19,17 +19,17 @@ RDEPEND="
 "
 
 src_install() {
-	cd "${S}"/squashfs-portage/etc/conf.d
+	cd "${S}"/etc/conf.d
 	insinto /etc/conf.d
 	doins squashfs-portage || die
 
-	DESTTREE=/usr/lib/squashfs-portage dobin "${S}"/squashfs-portage/lib/bin/squashfs-portage-mount || die
+	DESTTREE=/usr/lib/squashfs-portage dobin "${S}"/lib/bin/squashfs-portage-mount || die
 
-	cd "${S}"/squashfs-portage/pre-sync.d/
+	cd "${S}"/pre-sync.d/
 	insinto /etc/portage/hooks/pre-sync.d
 	doins 20-squashfs || die
 	
-	cd "${S}"/squashfs-portage/pre-run.d/
+	cd "${S}"/pre-run.d/
 	insinto /etc/portage/hooks/pre-run.d
 	doins 20-squashfs || die
 	
@@ -43,13 +43,8 @@ src_install() {
 	elog ' *) Verify at least squashfs support is enabled in the kernel. If you do'
 	elog '    not have aufs as well, change SQUASHFS_MOUNT to '"'"'/usr/portage'"'"' and'
 	elog '    in /etc/make.conf configure PKGDIR and DISTDIR to point somewhere'
-	elog '    besides a folder in /usr/portage. Finally, edit'
-	elog '    /usr/lib/squashfs-portage/bin/squashfs-portage-mount and change the'
-	elog '    following line from:'
-	elog '    # for type in SQUASHFS SQUASHFS_AUFS; do'
-	elog '    to:'
-	elog '    # for type in SQUASHFS; do'
-	elog '    In the future, aufs will be easier to disable.'
+	elog '    besides a folder in /usr/portage. In the future, aufs will be	easier to'
+	elog '    disable.'
 	elog
 	elog 'Once this is done, run emerge --sync to get a squashfs image properly mounted'
 	elog 'and ready.'
