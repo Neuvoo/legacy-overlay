@@ -1,2 +1,2 @@
 net-dns/avahi mdnsresponder-compat
-net-misc/networkmanager connection-sharing dhcpcd resolvconf
+net-misc/networkmanager connection-sharing
