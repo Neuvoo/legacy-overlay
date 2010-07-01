@@ -1,1 +1,2 @@
 USE="tslib"
+INPUT_DEVICES="${INPUT_DEVICES} tslib"

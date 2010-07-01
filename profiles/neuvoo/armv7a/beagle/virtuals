@@ -1,5 +1,1 @@
-# Copyright 2009-2010 Neuvoo Project
-# Distributed under the terms of the GNU General Public License, v2
-# $Header: $
-
-virtual/linux-sources		<sys-kernel/neuvoo-sources-9999
+virtual/linux-sources		sys-kernel/neuvoo-sources
