@@ -25,6 +25,11 @@ src_install() {
 
 	DESTTREE=/usr/lib/ebin dobin "${S}"/ebin/usr/lib/ebin/bin/ebin || die
 
+	cd "${S}"/ebin/usr/lib/ebin/lib/
+	insinto /usr/lib/ebin/lib/
+	doins ebin-binary-skel.ebuild || die
+	doins ebin-index-skel.ebuild || die
+	
 	cd "${S}"/ebin/etc/portage/hooks/post-ebuild.d/
 	insinto /etc/portage/hooks/post-ebuild.d
 	doins 80-ebin || die
