@@ -1,2 +1,2 @@
 USE="bash-completion cjk syslog"
-EMERGE_DEFAULT_OPTS="$EMERGE_DEFAULT_OPTS --binpkg-respect-use y"
+EMERGE_DEFAULT_OPTS="--binpkg-respect-use y"
