@@ -1,0 +1,419 @@
+diff --git a/bin/ebuild.sh b/bin/ebuild.sh
+index deb625b..a85378e 100755
+--- a/bin/ebuild.sh
++++ b/bin/ebuild.sh
+@@ -274,6 +274,32 @@ register_success_hook() {
+ 	done
+ }
+ 
++register_phase_hook() {
++	if [ -z "$3" ]; then
++		echo "!!! register_phase_hook() called without enough parameters." >&2
++		echo "!!! register_phase_hook <before|after> <phase|all> <cmd>" >&2
++		return 1
++	fi
++	local x when phase cmd cmdargs
++	when="$(echo $1 | tr 'a-z' 'A-Z')"; shift # uppercase when
++	phase="$(echo $1 | tr 'A-Z' 'a-z')"; shift # lowercase phase name (to match real phase names)
++
++	case "${when}" in
++		BEFORE|AFTER)
++			: # allowed
++			;;
++		*)
++			echo "!!! register_phase_hook() called with invalid when parameter: $when" >&2
++			return 1
++			;;
++	esac
++	
++	for x in $* ; do
++		hasq $x $(eval 'echo $EBUILD_PHASE_HOOKS_'"${when}"'_'"${phase}") || \
++			export EBUILD_PHASE_HOOKS_"${when}"_"${phase}"+="${x} "
++	done
++}
++
+ # Ensure that $PWD is sane whenever possible, to protect against
+ # exploitation of insecure search path for python -c in ebuilds.
+ # See bug #239560.
+@@ -660,19 +686,49 @@ _eapi4_src_install() {
+ }
+ 
+ ebuild_phase() {
+-	declare -F "$1" >/dev/null && qa_call $1
+-	# Process post-ebuild hooks for the actual phase (and not internal pre/post phase hooks)
+-	[[ "$(expr match $1 '^pre_\|^post_')" == "0" ]] && source "${HOOKS_SH_BINARY}" --do-post-ebuild
++	local x phase_name=${1} pre_phase_hooks post_phase_hooks
++
++	# only run new-style hooks if this function isn't being used to
++	# execute an old-style phase hook (which causes duplicate new-style
++	# hook calls)
++	if [[ "$(expr match $1 '^pre_\|^post_')" == "0" ]]; then
++		pre_phase_hooks="$(eval 'echo $EBUILD_PHASE_HOOKS_BEFORE_'"${phase_name}") $EBUILD_PHASE_HOOKS_BEFORE_all"
++		post_phase_hooks="$(eval 'echo $EBUILD_PHASE_HOOKS_AFTER_'"${phase_name}") $EBUILD_PHASE_HOOKS_AFTER_all"
++	fi
++	
++	for x in \
++		$pre_phase_hooks \
++		${phase_name} \
++		$post_phase_hooks
++	do
++		exec_ebuild_phase ${x}
++	done
+ }
+ 
++# TODO: deprecate this function? Should be easy to provide backwards
++# compatibility:
++# register_phase_hook before <phase> pre_<phase>
++# register_phase_hook after <phase> post_<phase>
+ ebuild_phase_with_hooks() {
+ 	local x phase_name=${1}
+ 	[ -n "$EBUILD_PHASE" ] && rm -f "$T/logging/$EBUILD_PHASE"
+-	for x in {pre_,,post_}${phase_name} ; do
+-		ebuild_phase ${x}
++	for x in \
++		$(eval 'echo $EBUILD_PHASE_HOOKS_BEFORE_'"${phase_name}") \
++		$EBUILD_PHASE_HOOKS_BEFORE_all \
++		pre_${phase_name} \
++		${phase_name} \
++		$(eval 'echo $EBUILD_PHASE_HOOKS_AFTER_'"${phase_name}") \
++		$EBUILD_PHASE_HOOKS_AFTER_all \
++		post_${phase_name}
++	do
++		exec_ebuild_phase ${x}
+ 	done
+ }
+ 
++exec_ebuild_phase() {
++	declare -F "$1" >/dev/null && qa_call $1
++}
++
+ dyn_pretend() {
+ 	ebuild_phase_with_hooks pkg_pretend
+ }
+@@ -1758,8 +1814,15 @@ preprocess_ebuild_env() {
+ 	return ${retval}
+ }
+ 
+-# Process pre-ebuild hook
+-source "${HOOKS_SH_BINARY}" --do-pre-ebuild
++# Portage hooks
++portage_hooks_pre_ebuild() {
++	source "${HOOKS_SH_BINARY}" --do-pre-ebuild || return $?
++}
++portage_hooks_post_ebuild() {
++	source "${HOOKS_SH_BINARY}" --do-post-ebuild || return $?
++}
++register_phase_hook before all portage_hooks_pre_ebuild
++register_phase_hook after all portage_hooks_post_ebuild
+ 
+ # === === === === === === === === === === === === === === === === === ===
+ # === === === === === functions end, main part begins === === === === ===
+diff --git a/bin/hooks.sh b/bin/hooks.sh
+index bc69311..915ee31 100755
+--- a/bin/hooks.sh
++++ b/bin/hooks.sh
+@@ -7,8 +7,7 @@
+ # @BLURB: Executes hooks in the current directory.
+ # @DESCRIPTION:
+ # Part of the portage hooks system, this script is responsible for executing
+-# hooks within a prepared environment, as well as acting as an API interface
+-# between hooks and portage.
++# hooks within a prepared environment
+ 
+ # Only run hooks if it's requested in $FEATURES
+ if ! (source "${PORTAGE_BIN_PATH}/isolated-functions.sh" && hasq hooks $FEATURES) ; then
+@@ -40,11 +39,6 @@ if [[ "$1" == "--do-pre-ebuild" || "$1" == "--do-post-ebuild" ]]; then
+ 		:
+ 		#debug-print "This hook path could not be found; ignored: ${hooks_dir}"
+ 	else
+-		# Create the temporary directory if needed
+-		if [ ! -d "${HOOKS_TMPDIR}" ]; then
+-			mkdir "${HOOKS_TMPDIR}" || die "Could not create temporary hooks output directory: ${HOOKS_TMPDIR}"
+-		fi
+-		
+ 		# Execute the hooks
+ 		source "${HOOKS_SH_BINARY}" --action "${EBUILD_PHASE}" --target "${EBUILD}"
+ 		exit_code="$?"
+@@ -65,104 +59,8 @@ fi
+ hook_files=( * )
+ hook_args=( "$@" )
+ hook_verbosity="0"
+-HOOKS_TMPDIR_settings="${HOOKS_TMPDIR}/settings/"
+-HOOKS_TMPDIR_envonly="${HOOKS_TMPDIR}/envonly/"
+ 
+ hook_local_vars=( "hook_files" "hook_args" "hook_verbosity" ) # variables unset for hooks
+-quit_local_vars=( "HOOKS_TMPDIR_settings" "HOOKS_TMPDIR_envonly" "${hook_local_vars[@]}" ) # variables unset at quit
+-
+-# Create the directories we'll be using, if they don't already exist.
+-# Settings directory can exist, since it's global anyway
+-if [ ! -d "${HOOKS_TMPDIR_settings}" ]; then
+-	mkdir "${HOOKS_TMPDIR_settings}" || exit $?
+-fi
+-# Envonly directory cannot exist, since these vars are local only
+-[ -d "${HOOKS_TMPDIR_envonly}" ] && rm -rf "${HOOKS_TMPDIR_envonly}"
+-mkdir "${HOOKS_TMPDIR_envonly}" || exit $?
+-
+-# @FUNCTION: hooks_savesetting
+-# @DESCRIPTION:
+-# This function saves a variable in the environment into portage's internal
+-# settings variable, which is not only used by portage but also used as the
+-# environment for ebuilds. The changes made here are effective until portage
+-# quits, which means all ebuilds from here on will read them.
+-#
+-# Be careful: portage resets the internal settings variable at each ebuild phase
+-# and only allows whitelisted variables to persist beyond ebuild phases. Do not
+-# use this to store hook-specific settings!
+-# 
+-# Takes one argument, which is the variable name to save. Arrays are allowed but
+-# discouraged, since portage will read them as serialized strings only.
+-function hooks_savesetting () {
+-	hooks_savevarto "$1" "${HOOKS_TMPDIR_settings}" || return $?
+-}
+-
+-# @FUNCTION: hooks_saveenvonly
+-# @DESCRIPTION:
+-# Like hooks_savesetting, except that the variable will only be saved so that
+-# future hooks and, if it is an ebuild hook, the current ebuild phase will see
+-# it. In other words, the big difference is this change isn't saved in portage's
+-# internal settings variable while portage is running.
+-# 
+-# Takes one argument, which is the variable name to save. Arrays are allowed.
+-function hooks_saveenvonly () {
+-	hooks_savevarto "$1" "${HOOKS_TMPDIR_envonly}" || return $?
+-}
+-
+-# @FUNCTION: hooks_savevarto
+-# @DESCRIPTION:
+-# Hook developers are highly discouraged from calling directly.
+-#
+-# Used by hook APIs to serialize a variable to a file inside the specified
+-# directory.
+-# 
+-# Takes two arguments:
+-# * First is the variable name to save. Arrays are allowed, but if portage is to
+-#   read this variable back, it will be read as a string.
+-# * Second is the directory, which must exist. The variable name, after
+-#   processed by basename, will be used as the file name.
+-function hooks_savevarto () {
+-	local unsecure_varname="$1"
+-	local directory="$2"
+-	local varname="$(basename ${unsecure_varname})"
+-	
+-	if [[ "${unsecure_varname}" != "${varname}" ]]; then
+-		eerror "Illegal hooks variable name: ${unsecure_varname}"
+-		return 1
+-	fi
+-	
+-	if [ ! -d "${directory}" ]; then
+-		eerror "${directory} is not a directory"
+-		return 1
+-	fi
+-	
+-	# removes the beginning junk we don't want, up to the equals sign
+-	declare -p "${varname}" | sed '1s|^[^=]*=||' > "${directory}/${varname}" || return $?
+-}
+-
+-# @FUNCTION: hooks_killportage
+-# @DESCRIPTION:
+-# This is a convenience function, which allows a hook to stop portage
+-# immediately. This will cause portage to exit without whining too much.
+-# Portage will still exit with an error code, breaking wrapper scripts like
+-# eix-sync.
+-# 
+-# Takes one optional argument, which is the kill signal, passed to kill via the
+-# -s argument. Otherwise, uses kill's default signal.
+-
+-# TODO: unable to test with unit tests, since it forces even the testing module
+-# to quit
+-function hooks_killportage () {
+-	local signal="$1"
+-	
+-	local args=( )
+-	if [[ "${signal}" != "" ]]; then
+-		args+=( -s "${signal}" )
+-	fi
+-	args+=( "${PPID}" )
+-	
+-	kill "${args[@]}"
+-}
+ 
+ for (( i = 0 ; i < ${#hook_args[@]} ; i++ )); do
+ 	if [[ "${hook_args[$i]}" == "--verbose" ]]; then
+@@ -172,7 +70,9 @@ done
+ 
+ for (( i = 0 ; i < ${#hook_files[@]} ; i++ )); do
+ 	hook="${hook_files[$i]}"
+-	if [[ ! -f "${hook}" ]]; then
++	if [[ ! -e "${hook}" ]]; then
++		continue
++	elif [[ ! -f "${hook}" ]]; then
+ 		[ "${hook_verbosity}" -gt 0 ] && ewarn "Only files are recognized in a hook directory: ${hook}"
+ 		continue
+ 	fi
+@@ -186,24 +86,6 @@ for (( i = 0 ; i < ${#hook_files[@]} ; i++ )); do
+ 		eerror "Hook $(pwd)/${hook} returned with exit code ${exit_code}"
+ 		exit "${exit_code}"
+ 	fi
+-	
+-	# We need to re-export variables that hooks saved. The goal is to let the
+-	# specifically-saved variables escape the hook "( ... )" subshell and carry
+-	# over into the next hook or an ebuild env.
+-	var_files=( "${HOOKS_TMPDIR_envonly}"/* "${HOOKS_TMPDIR_settings}"/* )
+-	for (( varI = 0 ; varI < ${#var_files[@]} ; varI++ )); do
+-		varname="$(basename ${var_files[$varI]})"
+-		# if there are no files, the variable points to a non-existant file, which we want to catch here
+-		if [ ! -f "${var_files[$varI]}" ]; then
+-			continue;
+-		fi
+-		# if the variable is not read-only
+-		if $(unset "${varname}" 2> /dev/null) ; then
+-			eval declare -x "$(basename ${var_files[$varI]})"="$(cat ${var_files[$varI]})" || exit $?
+-		else
+-			ewarn "A hook tried to modify a read-only variable: ${varname}"
+-		fi
+-	done
+ done
+ 
+-unset "${quit_local_vars[@]}"
++unset "${hook_local_vars[@]}"
+diff --git a/doc/config/hooks.docbook b/doc/config/hooks.docbook
+index 5fc6000..aa37c75 100644
+--- a/doc/config/hooks.docbook
++++ b/doc/config/hooks.docbook
+@@ -35,11 +35,6 @@
+ 		</para>
+ 		
+ 		<para>
+-		If a hook needs a temporary directory, create one inside of
+-		the directory indicated by the HOOKS_TMPDIR bash variable.
+-		</para>
+-		
+-		<para>
+ 		Some hook types have slightly different usage. See <quote>
+ 		<link linkend='config-hooks-locations' endterm="config-hooks-locations.title"/></quote> for more
+ 		information.
+diff --git a/pym/portage/hooks.py b/pym/portage/hooks.py
+index ceaf5ef..29c41e1 100644
+--- a/pym/portage/hooks.py
++++ b/pym/portage/hooks.py
+@@ -50,21 +50,13 @@ class HookDirectory(object):
+ 				for mytarget in self.mytargets:
+ 					command.extend(['--target', mytarget])
+ 			
+-			tmpdir = mkdtemp()
+-			try:
+-				command=[BASH_BINARY, '-c', 'cd "'+path+'" && source "' + PORTAGE_BIN_PATH + '/isolated-functions.sh" && declare -x HOOKS_TMPDIR="'+tmpdir+'" && source ' + ' '.join(command)]
+-				if self.myopts and "--verbose" in self.myopts:
+-					self.output.einfo('Executing hooks directory "' + self.path + '"...')
+-				code = spawn(mycommand=command, env=self.settings.environ())
+-				if code: # if failure
+-					# behavior mimicked by hook.sh
+-					raise PortageException('!!! Hook directory %s failed with exit code %s' % (self.path, code))
+-					
+-				if os.path.exists(tmpdir+'/settings/'):
+-					self.settings = self.merge_to_env (self.settings, tmpdir+'/settings/')
+-				
+-			finally:
+-				rmtree(tmpdir)
++			command=[BASH_BINARY, '-c', 'cd "'+path+'" && source "' + PORTAGE_BIN_PATH + '/isolated-functions.sh" && source ' + ' '.join(command)]
++			if self.myopts and "--verbose" in self.myopts:
++				self.output.einfo('Executing hooks directory "' + self.path + '"...')
++			code = spawn(mycommand=command, env=self.settings.environ())
++			if code: # if failure
++				# behavior mimicked by hook.sh
++				raise PortageException('!!! Hook directory %s failed with exit code %s' % (self.path, code))
+ 		
+ 		else:
+ 			raise InvalidLocation('This hook path ought to be a directory: ' + path)
+diff --git a/pym/portage/package/ebuild/config.py b/pym/portage/package/ebuild/config.py
+index df351b0..3eb6fe1 100644
+--- a/pym/portage/package/ebuild/config.py
++++ b/pym/portage/package/ebuild/config.py
+@@ -171,7 +171,6 @@ class config(object):
+ 		"EBUILD_PHASE", "ECLASSDIR", "ECLASS_DEPTH", "ED",
+ 		"EMERGE_FROM", "EPREFIX", "EROOT",
+ 		"FEATURES", "FILESDIR", "HOME", "NOCOLOR", "PATH",
+-		"HOOKS_PATH", "HOOKS_SH_BINARY", "HOOKS_TMPDIR",
+ 		"PKGDIR",
+ 		"PKGUSE", "PKG_LOGDIR", "PKG_TMPDIR",
+ 		"PORTAGE_ACTUAL_DISTDIR", "PORTAGE_ARCHLIST",
+diff --git a/pym/portage/package/ebuild/doebuild.py b/pym/portage/package/ebuild/doebuild.py
+index 596a1fe..4218fd4 100644
+--- a/pym/portage/package/ebuild/doebuild.py
++++ b/pym/portage/package/ebuild/doebuild.py
+@@ -143,8 +143,6 @@ def doebuild_environment(myebuild, mydo, myroot, mysettings,
+ 	mysettings["PN"] = mysplit[0]
+ 	mysettings["PV"] = mysplit[1]
+ 	mysettings["PR"] = mysplit[2]
+-	
+-	mysettings["HOOKS_TMPDIR"] = mysettings["PORTAGE_TMPDIR"]+"/hooks-"+mysettings["P"]
+ 
+ 	if noiselimit < 0:
+ 		mysettings["PORTAGE_QUIET"] = "1"
+@@ -1038,12 +1036,6 @@ def doebuild(myebuild, mydo, myroot, mysettings, debug=0, listonly=0,
+ 			# and the exemption is no longer needed.
+ 			portage._doebuild_manifest_exempt_depend -= 1
+ 		
+-		# If hooks executed this time around, handle global settings changes
+-		if (os.path.exists(mysettings["HOOKS_TMPDIR"]+"/settings/")):
+-			hookDirectory = HookDirectory('post-ebuild', mysettings)
+-			mysettings = hookDirectory.merge_to_env(mysettings, mysettings["HOOKS_TMPDIR"]+"/settings/")
+-			shutil.rmtree(mysettings["HOOKS_TMPDIR"])
+-		
+ def _validate_deps(mysettings, myroot, mydo, mydbapi):
+ 
+ 	invalid_dep_exempt_phases = \
+diff --git a/pym/portage/tests/hooks/test_HookDirectory.py b/pym/portage/tests/hooks/test_HookDirectory.py
+index 5e1cebc..09949e5 100644
+--- a/pym/portage/tests/hooks/test_HookDirectory.py
++++ b/pym/portage/tests/hooks/test_HookDirectory.py
+@@ -10,13 +10,6 @@ from portage.tests import TestCase
+ from tempfile import mkdtemp
+ from shutil import rmtree
+ 
+-# http://stackoverflow.com/questions/845058/how-to-get-line-count-cheaply-in-python
+-def file_len(fname):
+-    with open(fname) as f:
+-        for i, l in enumerate(f):
+-            pass
+-    return i + 1
+-
+ class HookDirectoryTestCase(TestCase):
+ 	
+ 	def testHookDirectory(self):
+@@ -32,10 +25,7 @@ class HookDirectoryTestCase(TestCase):
+ 			settings["FEATURES"] += " hooks"
+ 			hooks = HookDirectory(phase='test', settings=settings)
+ 			hooks.execute()
+-			self.assert_(settings["test"] == "this is another test")
+-			self.assert_(settings["test2"] == "this is a second test")
+ 			self.assert_(settings["hookonlytest"] == "")
+-			self.assert_(file_len(self.tmp_dir_path+'/output') == 2)
+ 		finally:
+ 			rmtree(self.tmp_dir_path)
+ 	
+@@ -46,20 +36,14 @@ class HookDirectoryTestCase(TestCase):
+ 		
+ 		f = open(hooks_dir+'/1-testhook', 'w')
+ 		f.write('#!/bin/bash\n')
+-		f.write('test="this is a test"\n')
+-		f.write('hookonlytest="portage cannot see me!"\n')
+-		f.write('echo hi >> '+tmp_dir+'/output && hooks_savesetting test && hooks_saveenvonly hookonlytest\n')
+-		f.write('exit $?\n')
++		f.write('export hookonlytest="portage cannot see me!"\n')
++		f.write('exit 0\n')
+ 		f.close()
+ 		
+ 		f = open(hooks_dir+'/2-testhook', 'w')
+ 		f.write('#!/bin/bash\n')
+-		f.write('if [[ "${test}" != "this is a test" ]]; then echo "Unexpected test value: ${test}"; exit 3; fi\n');
+-		f.write('if [[ "${hookonlytest}" != "portage cannot see me!" ]]; then echo "Unexpected hookonlytest value: ${hookonlytest}"; exit 3; fi\n');
+-		f.write('test="this is another test"\n')
+-		f.write('test2="this is a second test"\n')
+-		f.write('echo hey >> '+tmp_dir+'/output && hooks_savesetting test && hooks_savesetting test2\n')
+-		f.write('exit $?\n')
++		f.write('if [[ "${hookonlytest}" != "" ]]; then echo "Unexpected hookonlytest value: ${hookonlytest}"; exit 1; fi\n');
++		f.write('exit 0\n')
+ 		f.close()
+ 		
+ 		return tmp_dir
