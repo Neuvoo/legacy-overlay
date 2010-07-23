@@ -107,6 +107,7 @@ src_prepare() {
 		fi
 		epatch "${WORKDIR}/${PN}-${PATCHVER}.patch"
 	fi
+	# Gentoo bug #272988
 	epatch "${FILESDIR}/${PN}-${PATCHVER}-neuvoo.patch"
 	epatch "${FILESDIR}/${PN}-${PATCHVER}-neuvoo_phase-hooks.patch"
 	einfo "Setting portage.VERSION to ${PVR} ..."

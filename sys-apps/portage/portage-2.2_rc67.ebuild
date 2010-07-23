@@ -107,6 +107,7 @@ src_prepare() {
 		fi
 		epatch "${WORKDIR}/${PN}-${PATCHVER}.patch"
 	fi
+	# Gentoo bug #272988
 	epatch "${FILESDIR}/${PN}-${PATCHVER}-neuvoo.patch"
 	einfo "Setting portage.VERSION to ${PVR} ..."
 	sed -i "s/^VERSION=.*/VERSION=\"${PVR}\"/" pym/portage/__init__.py || \

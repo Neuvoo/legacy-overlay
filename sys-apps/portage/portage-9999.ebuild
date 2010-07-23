@@ -5,6 +5,7 @@
 # Require EAPI 2 since we now require at least python-2.6 (for python 3
 # syntax support) which also requires EAPI 2.
 EAPI=2
+# Gentoo bug #272988
 EGIT_REPO_URI="git://gitorious.org/neuvoo/portage.git"
 EGIT_BRANCH="neuvoo/trunk"
 inherit git eutils multilib python
