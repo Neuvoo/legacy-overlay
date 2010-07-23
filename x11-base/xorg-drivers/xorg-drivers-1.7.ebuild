@@ -1,6 +1,6 @@
-# Copyright 1999-2009 Gentoo Foundation
+# Copyright 1999-2010 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/x11-base/xorg-drivers/xorg-drivers-1.7.ebuild,v 1.6 2009/12/13 23:42:41 remi Exp $
+# $Header: /var/cvsroot/gentoo-x86/x11-base/xorg-drivers/xorg-drivers-1.7.ebuild,v 1.16 2010/07/14 09:32:28 lxnay Exp $
 
 DESCRIPTION="Meta package containing deps on all xorg drivers"
 HOMEPAGE="http://www.gentoo.org/"
@@ -8,15 +8,17 @@ SRC_URI=""
 
 LICENSE="as-is"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~mips ~ppc ~ppc64 ~sh ~sparc ~x86 ~x86-fbsd"
+KEYWORDS="~alpha amd64 arm hppa ~ia64 ~mips ppc ppc64 ~sh ~sparc x86 ~x86-fbsd"
 
 IUSE_INPUT_DEVICES="
 	input_devices_acecad
 	input_devices_aiptek
 	input_devices_evdev
+	input_devices_fpit
 	input_devices_joystick
 	input_devices_keyboard
 	input_devices_mouse
+	input_devices_penmount
 	input_devices_tslib
 	input_devices_virtualbox
 	input_devices_vmmouse
@@ -43,6 +45,7 @@ IUSE_VIDEO_CARDS="
 	video_cards_mga
 	video_cards_neomagic
 	video_cards_newport
+	video_cards_nouveau
 	video_cards_nv
 	video_cards_r128
 	video_cards_radeon
@@ -83,9 +86,11 @@ PDEPEND="
 	input_devices_acecad?      ( x11-drivers/xf86-input-acecad )
 	input_devices_aiptek?      ( x11-drivers/xf86-input-aiptek )
 	input_devices_evdev?       ( x11-drivers/xf86-input-evdev )
+	input_devices_fpit?        ( x11-drivers/xf86-input-fpit )
 	input_devices_joystick?    ( x11-drivers/xf86-input-joystick )
 	input_devices_keyboard?    ( x11-drivers/xf86-input-keyboard )
 	input_devices_mouse?       ( x11-drivers/xf86-input-mouse )
+	input_devices_penmount?    ( x11-drivers/xf86-input-penmount )
 	input_devices_tslib?       ( x11-drivers/xf86-input-tslib )
 	input_devices_virtualbox?  ( x11-drivers/xf86-input-virtualbox )
 	input_devices_vmmouse?     ( x11-drivers/xf86-input-vmmouse )
@@ -109,6 +114,7 @@ PDEPEND="
 	video_cards_mga?           ( x11-drivers/xf86-video-mga )
 	video_cards_neomagic?      ( x11-drivers/xf86-video-neomagic )
 	video_cards_newport?       ( x11-drivers/xf86-video-newport )
+	video_cards_nouveau?       ( x11-drivers/xf86-video-nouveau )
 	video_cards_nv?            ( x11-drivers/xf86-video-nv )
 	video_cards_nvidia?        ( x11-drivers/nvidia-drivers )
 	video_cards_fglrx?         ( x11-drivers/ati-drivers )
@@ -139,16 +145,10 @@ PDEPEND="
 
 	!x11-drivers/xf86-input-citron
 	!x11-drivers/xf86-input-elographics
-	!x11-drivers/xf86-input-fpit
 	!x11-drivers/xf86-input-hyperpen
 	!x11-drivers/xf86-input-mutouch
-	!x11-drivers/xf86-input-penmount
 	!x11-drivers/xf86-video-cyrix
 	!x11-drivers/xf86-video-impact
 	!x11-drivers/xf86-video-nsc
 	!x11-drivers/xf86-video-sunbw2
-	!x11-drivers/xf86-video-suncg14
-	!x11-drivers/xf86-video-suncg3
-	!x11-drivers/xf86-video-suncg6
-	!x11-drivers/xf86-video-suntcx
 "
