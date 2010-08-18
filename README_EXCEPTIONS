@@ -10,4 +10,12 @@ media-video/omapfbplay
 
 # The following packages are exempt from requiring bugs upstream, they are provided for
 # convience by us but are maintained by Always Innovating, http://alwaysinnovating.com
-sys-kernel/touchbook
+sys-kernel/touchbook-kernel
+
+# The following packages are exempt from requiring bugs upstream, they are provided for
+# convience by us but are maintained by Open Pandora, http://openpandora.org
+sys-kernel/pandora-kernel
+
+# The following packages are exempt from requiring bugs upstream, they are provided for
+# convience by us but are maintained by the Angstrom Distribution, http://angstrom-distribution.org
+sys-kernel/angstrom-kernel
