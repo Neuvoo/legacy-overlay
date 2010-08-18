@@ -42,7 +42,7 @@ pkg_postinst() {
 	einfo "This kernel is for the TI Beagleboard."
 	einfo "If you are not using this for a beagleboard or clones, we recommend"
 	einfo "you use the generic neuvoo-sources kernel tree instead."
-	einfo "Please report all bugs or comments to Always Innovating at:"
+	einfo "Please report all bugs or comments to the Angstrom Distribution at:"
 	einfo "IRC Freenode #angstrom or"
 	einfo "${HOMEPAGE}"
 }
