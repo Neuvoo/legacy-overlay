@@ -29,6 +29,10 @@ src_install() {
 	elog "# ln -s /etc/X11/xorg.conf.pandora /etc/X11/xorg.conf"
 	elog "...or edit /etc/X11/xorg.conf and add the parts you like from"
 	elog "xorg.conf.pandora."
+	elog
+	elog "In order for the touchscreen to operate, uncomment the following line"
+	elog "in /etc/ts.conf:"
+	elog "# module_raw input"
 
 	mkdir -p "${D}/lib/udev/rules.d/"
 	cat > "${D}/lib/udev/rules.d/50-compat_firmware.rules" <<EOF || die "couldn't install 50-compat_firmware.rules"
@@ -145,6 +149,9 @@ echo 20 > /proc/pandora/nub1/scroll_rate
 echo 20 > /proc/pandora/nub1/mbutton_threshold
 EOF
 
+	chmod +x "${D}/etc/X11/xinit/xinitrc.d/01-pndkeymap" || die "failed to set up permissions"
+	chmod +x "${D}/etc/X11/xinit/xinitrc.d/01-pndnubmice" || die "failed to set up permissions"
+
 	mkdir -p "${D}/etc/X11/"
 	cat > "${D}/etc/X11/xorg.conf.pandora" <<EOF || die "couldn't install xorg.conf.pandora"
 Section "Device"
@@ -152,5 +159,13 @@ Section "Device"
 	Driver	"omapfb"
 	Option	"ShadowFB" "false"
 EndSection
+EOF
+
+	mkdir -p "${D}/etc/env.d/"
+	cat > "${D}/etc/env.d/10tslib" <<EOF || die "couldn't install 10tslib"
+TSLIB_TSDEVICE=/dev/input/by-path/platform-omap2_mcspi.1-event
+TSLIB_CALIBFILE=/etc/pointercal
+TSLIB_CONSOLEDEVICE=none
+TSLIB_FBDEVICE=/dev/fb0
 EOF
 }
