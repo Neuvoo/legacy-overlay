@@ -30,11 +30,13 @@ src_install() {
 	einfo "...or edit /etc/X11/xorg.conf and add the parts you like from"
 	einfo "xorg.conf.pandora."
 
-	"${D}/lib/udev/rules.d/50-compat_firmware.rules" <<EOF
+	mkdir -p "${D}/lib/udev/rules.d/"
+	"${D}/lib/udev/rules.d/50-compat_firmware.rules" || die "couldn't install 50-compat_firmware.rules" <<EOF
 SUBSYSTEM=="compat_firmware", ACTION=="add", RUN+="firmware.sh"
 EOF
 
-	"${D}/etc/X11/xinit/xinitrc.d/01-pndkeymap" <<REOF
+	mkdir -p "${D}/etc/X11/xinit/xinitrc.d/"
+	"${D}/etc/X11/xinit/xinitrc.d/01-pndkeymap" || die "couldn't install 01-pndkeymap" <<REOF
 xmodmap - <<EOF
 keycode   9 = Escape NoSymbol Escape
 keycode  10 = 1 section 1 section
@@ -127,7 +129,8 @@ keycode 235 = Tab NoSymbol Tab
 EOF
 REOF
 
-	"${D}/etc/X11/xinit/xinitrc.d/01-pndnubmice" <<EOF
+	mkdir -p "${D}/etc/X11/xinit/xinitrc.d/"
+	"${D}/etc/X11/xinit/xinitrc.d/01-pndnubmice" || die "couldn't install 01-pndnubmice" <<EOF
 echo mouse > /proc/pandora/nub0/mode
 echo 150 > /proc/pandora/nub0/mouse_sensitivity
 echo 7 > /proc/pandora/nub0/scrollx_sensitivity
@@ -142,7 +145,8 @@ echo 20 > /proc/pandora/nub1/scroll_rate
 echo 20 > /proc/pandora/nub1/mbutton_threshold
 EOF
 
-	"${D}/etc/X11/xorg.conf.pandora" <<EOF
+	mkdir -p "${D}/etc/X11/"
+	"${D}/etc/X11/xorg.conf.pandora" || die "couldn't install xorg.conf.pandora" <<EOF
 Section "Device"
 	Identifier	"Framebuffer Device"
 	Driver	"fbdev"
