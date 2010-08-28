@@ -20,23 +20,23 @@ RDEPEND="${DEPEND}
 src_install() {
 	ewarn "This will only work, at all, if you have the Pandora kernel"
 	ewarn "installed."
-	einfo
-	einfo "Add omaplfb and board-omap3pandora-wifi to /etc/conf.d/modules to"
-	einfo "autoload these drivers at boot."
-	einfo
-	einfo "The /etc/X11/xorg.conf.pandora file is a suggested configuration for"
-	einfo "X. Symlink to it from /etc/X11/xorg.conf:"
-	einfo "# ln -s /etc/X11/xorg.conf.pandora /etc/X11/xorg.conf"
-	einfo "...or edit /etc/X11/xorg.conf and add the parts you like from"
-	einfo "xorg.conf.pandora."
+	elog
+	elog "Add omaplfb and board-omap3pandora-wifi to /etc/conf.d/modules to"
+	elog "autoload these drivers at boot."
+	elog
+	elog "The /etc/X11/xorg.conf.pandora file is a suggested configuration for"
+	elog "X. Symlink to it from /etc/X11/xorg.conf:"
+	elog "# ln -s /etc/X11/xorg.conf.pandora /etc/X11/xorg.conf"
+	elog "...or edit /etc/X11/xorg.conf and add the parts you like from"
+	elog "xorg.conf.pandora."
 
 	mkdir -p "${D}/lib/udev/rules.d/"
-	"${D}/lib/udev/rules.d/50-compat_firmware.rules" || die "couldn't install 50-compat_firmware.rules" <<EOF
+	cat > "${D}/lib/udev/rules.d/50-compat_firmware.rules" <<EOF || die "couldn't install 50-compat_firmware.rules"
 SUBSYSTEM=="compat_firmware", ACTION=="add", RUN+="firmware.sh"
 EOF
 
 	mkdir -p "${D}/etc/X11/xinit/xinitrc.d/"
-	"${D}/etc/X11/xinit/xinitrc.d/01-pndkeymap" || die "couldn't install 01-pndkeymap" <<REOF
+	cat > "${D}/etc/X11/xinit/xinitrc.d/01-pndkeymap" <<REOF || die "couldn't install 01-pndkeymap"
 xmodmap - <<EOF
 keycode   9 = Escape NoSymbol Escape
 keycode  10 = 1 section 1 section
@@ -130,7 +130,7 @@ EOF
 REOF
 
 	mkdir -p "${D}/etc/X11/xinit/xinitrc.d/"
-	"${D}/etc/X11/xinit/xinitrc.d/01-pndnubmice" || die "couldn't install 01-pndnubmice" <<EOF
+	cat > "${D}/etc/X11/xinit/xinitrc.d/01-pndnubmice" <<EOF || die "couldn't install 01-pndnubmice"
 echo mouse > /proc/pandora/nub0/mode
 echo 150 > /proc/pandora/nub0/mouse_sensitivity
 echo 7 > /proc/pandora/nub0/scrollx_sensitivity
@@ -146,10 +146,10 @@ echo 20 > /proc/pandora/nub1/mbutton_threshold
 EOF
 
 	mkdir -p "${D}/etc/X11/"
-	"${D}/etc/X11/xorg.conf.pandora" || die "couldn't install xorg.conf.pandora" <<EOF
+	cat > "${D}/etc/X11/xorg.conf.pandora" <<EOF || die "couldn't install xorg.conf.pandora"
 Section "Device"
-	Identifier	"Framebuffer Device"
-	Driver	"fbdev"
+	Identifier	"OMAP Framebuffer Device"
+	Driver	"omapfb"
 	Option	"ShadowFB" "false"
 EndSection
 EOF
