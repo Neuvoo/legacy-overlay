@@ -15,7 +15,8 @@ IUSE=""
 
 DEPEND=""
 RDEPEND="${DEPEND}
-	>=sys-apps/baselayout-2"
+	>=sys-apps/baselayout-2
+	x11-apps/xmodmap"
 
 src_install() {
 	ewarn "This will only work, at all, if you have the Pandora kernel"
