@@ -4,5 +4,6 @@ media-plugins
 media-video
 sys-apps
 sys-kernel
+sys-libs
 x11-base
 x11-drivers
