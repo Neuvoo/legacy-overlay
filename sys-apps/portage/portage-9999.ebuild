@@ -1,14 +1,15 @@
 # Copyright 1999-2010 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/sys-apps/portage/portage-9999.ebuild,v 1.4 2010/04/28 07:26:51 zmedico Exp $
+# $Header: /var/cvsroot/gentoo-x86/sys-apps/portage/portage-9999.ebuild,v 1.7 2010/08/14 18:55:53 zmedico Exp $
 
 # Require EAPI 2 since we now require at least python-2.6 (for python 3
 # syntax support) which also requires EAPI 2.
 EAPI=2
+inherit git eutils multilib python
+
 # Gentoo bug #272988
 EGIT_REPO_URI="git://gitorious.org/neuvoo/portage.git"
 EGIT_BRANCH="neuvoo/trunk"
-inherit git eutils multilib python
 
 DESCRIPTION="Portage is the package management and distribution system for Gentoo"
 HOMEPAGE="http://www.gentoo.org/proj/en/portage/index.xml"
@@ -19,7 +20,10 @@ SLOT="0"
 IUSE="build doc epydoc python3 selinux"
 
 python_dep="python3? ( =dev-lang/python-3* )
-	!python3? ( || ( dev-lang/python:2.8 dev-lang/python:2.7 dev-lang/python:2.6 >=dev-lang/python-3 ) )"
+	!python3? (
+		build? ( || ( dev-lang/python:2.8 dev-lang/python:2.7 dev-lang/python:2.6 ) )
+		!build? ( || ( dev-lang/python:2.8 dev-lang/python:2.7 dev-lang/python:2.6 >=dev-lang/python-3 ) )
+	)"
 
 # The pysqlite blocker is for bug #282760.
 DEPEND="${python_dep}
@@ -125,10 +129,7 @@ src_compile() {
 }
 
 src_test() {
-	PYTHONPATH=${S}/pym:${PYTHONPATH:+:}${PYTHONPATH} \
-		./pym/portage/tests/runTests || die "test(s) failed"
-	# Prevent installation of *.pyc for python scripts.
-	find "$S/bin" -name "*.py[co]" -print0 | xargs -0 rm
+	./runtests.sh || die "tests failed"
 }
 
 src_install() {
@@ -140,8 +141,10 @@ src_install() {
 	insinto /etc
 	doins etc-update.conf dispatch-conf.conf || die
 
-	insinto "${portage_share_config}"
-	doins "${S}/cnf/"{sets.conf,make.globals} || die
+	insinto "$portage_share_config/sets"
+	doins "$S"/cnf/sets/*.conf || die
+	insinto "$portage_share_config"
+	doins "$S/cnf/make.globals" || die
 	if [ -f "make.conf.${ARCH}".diff ]; then
 		patch make.conf "make.conf.${ARCH}".diff || \
 			die "Failed to patch make.conf.example"
