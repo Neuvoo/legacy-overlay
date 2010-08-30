@@ -1,4 +1,5 @@
 # The following packages are exempt from requiring bugs upstream, since they are built by us:
+sys-kernel/neuvoo-beagle-kernel
 sys-kernel/neuvoo-sources
 sys-kernel/neuvoo-sources-touchbook
 
@@ -22,3 +23,8 @@ sys-kernel/pandora-kernel
 # convience by us but are maintained by the Angstrom Distribution, http://angstrom-distribution.org
 dev-embedded/u-boot-angstrom
 sys-kernel/angstrom-kernel
+
+# The following packages are exempt from requiring bugs upstream, they are provided for
+# convience by us but are maintained by the Texas Intruments, http://www.ti.com
+sys-libs/dsp-libs
+sys-libs/sgx-libs
