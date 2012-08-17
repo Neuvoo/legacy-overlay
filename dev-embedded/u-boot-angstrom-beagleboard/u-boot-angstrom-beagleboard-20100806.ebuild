@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Neuvoo Project
+# Copyright 2009-2011 Neuvoo Project
 # Distributed under the terms of the GNU General Public License v2
 # $Header: viridior $
 
@@ -6,8 +6,8 @@ inherit eutils
 
 KEYWORDS="arm"
 IUSE="install"
-HOMEPAGE="http://www.open-pandora.org"
-DESCRIPTION="Pandora U-Boot."
+HOMEPAGE="http://angstrom-distribution.org"
+DESCRIPTION="Beagleboard U-Boot."
 SLOT="0"
 
 NV_DIST_URI="http://neuvoo.org/neuvoo/distfiles"
@@ -38,10 +38,10 @@ src_install() {
 }
 
 pkg_postinst() {
-	einfo "These u-boot files are for the Open Pandora."
-	einfo "If you are not using these files for a pandora, we recommend"
+	einfo "These u-boot files are for the TI Beagleboard."
+	einfo "If you are not using these files for a beagleboard or clones, we recommend"
 	einfo "you use the device specific u-boot files instead."
-	einfo "Please report all bugs or comments to Open Pandora at:"
-	einfo "IRC EFNet #pandora, Freenode #openpandora, or"
+	einfo "Please report all bugs or comments to Angstrom Distribution at:"
+	einfo "IRC Freenode #angstrom or"
 	einfo "${HOMEPAGE}"
 }
