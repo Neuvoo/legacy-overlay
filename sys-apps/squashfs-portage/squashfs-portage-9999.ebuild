@@ -3,7 +3,7 @@
 # $Header: $
 
 EAPI=2
-EGIT_REPO_URI="git://gitorious.org/neuvoo/software.git"
+EGIT_REPO_URI="git://github.com/Neuvoo/squashfs-portage.git"
 EGIT_BRANCH="master"
 inherit git eutils
 

@@ -63,7 +63,7 @@ prefix_src_archives() {
 }
 
 # Gentoo bug #272988
-EGIT_REPO_URI="git://gitorious.org/neuvoo/portage.git"
+EGIT_REPO_URI="git://github.com/Neuvoo/portage.git"
 EGIT_BRANCH="neuvoo/trunk"
 S="${WORKDIR}"/${PN}
 

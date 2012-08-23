@@ -3,7 +3,7 @@
 # $Header: $
 
 EAPI=2
-SRC_URI="http://neuvoo.org/neuvoo/distfiles/${PN}/${P}.tar.bz2"
+SRC_URI="http://neuvoo.org/distfiles/${PN}/${P}.tar.bz2"
 
 inherit eutils
 
