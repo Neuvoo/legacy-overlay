@@ -1,3 +1,5 @@
+Design
+======
 This file contains an explanation about how we structured our profiles.
 
 * features/<name>: this is a feature folder, which contains primarily 
@@ -5,13 +7,24 @@ USE flags and sets, that instantly enable a certain feature. These are
 intended to be optional, so they should never be referenced by a generic 
 profile.
 
-* <arch>/<device>/<additional purpose>: "arch" is self-explanatory, 
-"device" refers to a product such as beagleboard or touchboox, and 
-"additional purpose" refers to a broad category such as desktop or 
-minimal. Every folder here is expected to be a sibling of at least the 
-folder directly above.
+* device/<arch>/<device>: "arch" is self-explanatory, 
+"device" refers to a product such as beagleboard or touchboox. Every folder
+here is expected to be a sibling of at least the folder directly above.
 
-* images/<release>/<device>: "release" is the appropriate release 
-version for your image.  "device" is as defined above previously. This 
-profile folder is never to be linked to, but instead its contents are to 
-be used for the /etc/make.profile.neuvoo and /etc/portage folders.
+* release/<release>/<stage>/<platform>: "release" is the appropriate release 
+version for your image.  "stage" is the appropriate stage. "device" is as
+defined above previously. This profile folder is to be linked to and will
+be based on specific downloadable images based on "platform".
+
+* toolchain/<toolchain>/<gcc>/<arch>: this folder is used to modularize
+the large number of processor core families which have varying hardware
+capabilities along with support as it is added by gcc.
+
+A visual understanding of this can be seen here:
+http://neuvoo.org/dev/docs/NeuvooProfileFlowDiagram.png
+
+Notes
+=====
+1. overlay/profiles/neuvoo/parent references /var/lib/neuvoo/portage_profile
+which should be a soft link to where normal Gentoo portage profiles resides.
+Normally, /usr/portage/profiles.

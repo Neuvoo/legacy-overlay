@@ -1,1 +1,1 @@
-USE="avahi networkmanager zeroconf samba"
+USE="avahi networkmanager zeroconf"

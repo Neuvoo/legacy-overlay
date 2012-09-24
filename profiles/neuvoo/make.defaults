@@ -1,2 +1,2 @@
-USE="bash-completion cjk syslog"
+USE="acl bash-completion bzip2 cjk dcron gdbm gzip lzma lzo nptl syslog-ng unicode xz"
 EMERGE_DEFAULT_OPTS="--binpkg-respect-use y"
