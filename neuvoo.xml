@@ -2,11 +2,11 @@
 <repo quality="experimental" status="unofficial">
   <name>neuvoo</name>
   <description>Neuvoo Overlay</description>
-  <homepage>https://github.com/Neuvoo/overlay</homepage>
+  <homepage>http://gitorious.org/neuvoo/overlay</homepage>
   <owner>
     <email>jacobgalbreath@gmail.com</email>
     <name>Jacob Galbreath</name>
   </owner>
-  <source type="git">git://github.com/Neuvoo/overlay.git</source>
-  <feed>https://github.com/Neuvoo/overlay/commits/master.atom</feed>
+  <source type="git">git://gitorious.org/neuvoo/overlay.git</source>
+  <feed>http://gitorious.org/neuvoo.atom</feed>
 </repo>
