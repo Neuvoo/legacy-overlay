@@ -1,0 +1,1 @@
+MARCH_TUNE="-march=armv7-a -mtune=cortex-a15 -mfpu=vfpv4"

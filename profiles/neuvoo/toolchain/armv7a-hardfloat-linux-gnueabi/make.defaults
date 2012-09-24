@@ -1,0 +1,2 @@
+ARCH="arm"
+CHOST="armv7a-unknown-linux-gnueabi"

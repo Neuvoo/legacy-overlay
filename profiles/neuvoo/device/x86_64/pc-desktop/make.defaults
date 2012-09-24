@@ -1,0 +1,3 @@
+VIDEO_CARDS="vesa fbdev"
+ALSA_CARDS="snd-usb"
+INPUT_DEVICES="keyboard mouse evdev"

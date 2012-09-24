@@ -1,0 +1,2 @@
+CFLAGS="${MARCH_TUNE} -Os -fomit-frame-pointer -ftree-vectorize"
+CXXFLAGS="${CFLAGS}"
